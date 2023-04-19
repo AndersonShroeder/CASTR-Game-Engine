@@ -39,6 +39,7 @@ GLFWwindow* Scene::initWindow()
 
 	gladLoadGL();
 
+    glfwSwapInterval(1);
 	glViewport(0, 0, SCREEN_WDITH, SCREEN_HEIGHT);
 
 	return window;

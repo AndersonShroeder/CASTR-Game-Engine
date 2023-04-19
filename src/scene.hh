@@ -2,6 +2,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <vector>
+#include <iostream>
 #define SCREEN_WDITH 800
 #define SCREEN_HEIGHT 800
 #define MAP_WIDTH 10
@@ -10,6 +11,8 @@
 #define MAP_STEP_SIZE_HEIGHT (1.0/MAP_HEIGHT) * 2
 #define XPIXEL 2/SCREEN_WDITH
 #define YPIXEL 2/SCREEN_HEIGHT
+#define MOVEMENT_FACTOR 10
+#define ROTATION_FACTOR 4
 
 class Scene
 {
@@ -25,6 +28,8 @@ class Scene
     GLFWwindow* initWindow();
 
     GLuint initShader();
+
+    void pollEvents();
 
     void drawGrid();
 

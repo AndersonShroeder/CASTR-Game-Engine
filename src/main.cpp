@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "scene.hh"
+#include "player.hh"
 
 // 2d representation of map
 int map[SCREEN_WDITH*SCREEN_HEIGHT] =
@@ -21,6 +22,8 @@ int main()
 {
 	Scene scene;
 
+	Player player(0, 0, scene.window);
+
 	while (!glfwWindowShouldClose(scene.window))
 	{
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -28,6 +31,7 @@ int main()
 
 		scene.drawMap(map);
 		scene.drawGrid();
+		player.drawPlayer(scene.VAO, scene.shaderProgram);
 
 		glfwSwapBuffers(scene.window);
 
