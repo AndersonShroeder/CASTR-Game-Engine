@@ -29,10 +29,11 @@ private:
     float py;
 
     // end points for direction vector
-    float epx = px;
-    float epy = py + .1;
+    float epx = px + .1;
+    float epy = py;
 
     // angle of direction vector
+    int global_angle = 0;
     int angle = 0;
 
     Keys keys;
@@ -95,7 +96,7 @@ public:
         }
     }
 
-    void drawPlayer(GLuint &VAO, GLuint &shaderProgram);
+    void drawPlayer(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH]);
 
     void drawDot(GLuint &VAO, GLuint &shaderProgram);
 
@@ -104,4 +105,14 @@ public:
     void checkKeys();
 
     void translate(Directions direction);
+
+    void projectVectors(int vector1[2], int vector2[2]);
+
+    void castRays(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH]);
+
+    void castRaysVertical(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH]);
+
+    void castRaysHorizontal(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH]);
+
+    void renderLines(GLuint &VAO, GLuint &shaderProgram, std::vector<GLuint> indicies, std::vector<GLfloat> vertices);
 };

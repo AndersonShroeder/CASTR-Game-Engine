@@ -7,16 +7,19 @@
 #define SCREEN_HEIGHT 800
 #define MAP_WIDTH 10
 #define MAP_HEIGHT 10
-#define MAP_STEP_SIZE_WIDTH (1.0/MAP_WIDTH) * 2
-#define MAP_STEP_SIZE_HEIGHT (1.0/MAP_HEIGHT) * 2
-#define XPIXEL 2/SCREEN_WDITH
-#define YPIXEL 2/SCREEN_HEIGHT
+#define CELL_WIDTH (SCREEN_WDITH)/(MAP_WIDTH)
+#define CELL_HEIGHT (SCREEN_HEIGHT)/(MAP_HEIGHT)
+#define MAP_STEP_SIZE_WIDTH (1.0 / MAP_WIDTH) * 2
+#define MAP_STEP_SIZE_HEIGHT (1.0 / MAP_HEIGHT) * 2
+#define XPIXEL 2 / SCREEN_WDITH
+#define YPIXEL 2 / SCREEN_HEIGHT
 #define MOVEMENT_FACTOR 10
 #define ROTATION_FACTOR 4
+#define NORMAL_TO_PIXEL(normal) ((normal + 1) * (SCREEN_HEIGHT)/2)
 
 class Scene
 {
-    public:
+public:
     GLFWwindow *window;
     GLuint shaderProgram;
     GLuint VAO;
@@ -25,7 +28,7 @@ class Scene
 
     ~Scene();
 
-    GLFWwindow* initWindow();
+    GLFWwindow *initWindow();
 
     GLuint initShader();
 
@@ -33,5 +36,5 @@ class Scene
 
     void drawGrid();
 
-    void drawMap(int map[MAP_HEIGHT*MAP_WIDTH]);
+    void drawMap(int map[MAP_HEIGHT * MAP_WIDTH]);
 };

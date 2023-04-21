@@ -8,85 +8,84 @@ Scene::Scene()
 
     glGenVertexArrays(1, &VAO);
 
-	glBindVertexArray(VAO);
+    glBindVertexArray(VAO);
 }
 Scene::~Scene()
 {
     glDeleteVertexArrays(1, &VAO);
-	glDeleteProgram(shaderProgram);
+    glDeleteProgram(shaderProgram);
 
-	glfwDestroyWindow(window);
+    glfwDestroyWindow(window);
 
-	glfwTerminate();
+    glfwTerminate();
 }
 
-GLFWwindow* Scene::initWindow()
+GLFWwindow *Scene::initWindow()
 {
     glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	GLFWwindow *window = glfwCreateWindow(SCREEN_WDITH, SCREEN_HEIGHT, "RayCasterEngine", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(SCREEN_WDITH, SCREEN_HEIGHT, "RayCasterEngine", NULL, NULL);
 
-	if (window == NULL)
-	{
-		// std::cout << "Failed to create GLFW window" << std::endl;
-		return NULL;
-	}
+    if (window == NULL)
+    {
+        // std::cout << "Failed to create GLFW window" << std::endl;
+        return NULL;
+    }
 
-	glfwMakeContextCurrent(window);
+    glfwMakeContextCurrent(window);
 
-	gladLoadGL();
+    gladLoadGL();
 
     glfwSwapInterval(1);
-	glViewport(0, 0, SCREEN_WDITH, SCREEN_HEIGHT);
+    glViewport(0, 0, SCREEN_WDITH, SCREEN_HEIGHT);
 
-	return window;
+    return window;
 }
 
 GLuint Scene::initShader()
 {
-	// Create a vertex shader object
-	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    // Create a vertex shader object
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
 
-	// Load the vertex shader source code into the shader object
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    // Load the vertex shader source code into the shader object
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
 
-	// Compile the vertex shader
-	glCompileShader(vertexShader);
+    // Compile the vertex shader
+    glCompileShader(vertexShader);
 
-	// Create a fragment shader object
-	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    // Create a fragment shader object
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 
-	// Load the fragment shader source code into the shader object
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    // Load the fragment shader source code into the shader object
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
 
-	// Compile the fragment shader
-	glCompileShader(fragmentShader);
+    // Compile the fragment shader
+    glCompileShader(fragmentShader);
 
-	// Create a shader program object
-	GLuint shaderProgram = glCreateProgram();
+    // Create a shader program object
+    GLuint shaderProgram = glCreateProgram();
 
-	// Attach the vertex and fragment shaders to the shader program
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
+    // Attach the vertex and fragment shaders to the shader program
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
 
-	// Link the shader program
-	glLinkProgram(shaderProgram);
+    // Link the shader program
+    glLinkProgram(shaderProgram);
 
-	// Delete the vertex and fragment shader objects (no longer needed)
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
+    // Delete the vertex and fragment shader objects (no longer needed)
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
 
-	// Return the ID of the compiled and linked shader program
-	return shaderProgram;
+    // Return the ID of the compiled and linked shader program
+    return shaderProgram;
 }
-
 
 void Scene::drawGrid()
 {
-	// Specify the color of the lines
+    // Specify the color of the lines
     GLfloat color[] = {0.0f, 0.0f, 0.0f, 0.0f};
 
     glUseProgram(shaderProgram);
@@ -140,7 +139,7 @@ void Scene::drawGrid()
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), indices.data(), GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void *)0);
 
     glDrawElements(GL_LINES, indices.size(), GL_UNSIGNED_INT, 0);
 
@@ -150,18 +149,18 @@ void Scene::drawGrid()
     glBindVertexArray(0);
 }
 
-void Scene::drawMap(int map[MAP_HEIGHT*MAP_WIDTH])
+void Scene::drawMap(int map[MAP_HEIGHT * MAP_WIDTH])
 {
     int startx = -1;
-	int starty = 1;
+    int starty = 1;
 
     glUseProgram(shaderProgram);
     glBindVertexArray(VAO);
-    
+
     std::vector<GLfloat> vertices;
     std::vector<GLuint> indices;
 
-    for (int i = 0; i < MAP_HEIGHT*MAP_WIDTH; i++)
+    for (int i = 0; i < MAP_HEIGHT * MAP_WIDTH; i++)
     {
         GLfloat color[3];
         if (map[i] == 0)
@@ -183,8 +182,8 @@ void Scene::drawMap(int map[MAP_HEIGHT*MAP_WIDTH])
 
         GLfloat top_y = 1 - MAP_STEP_SIZE_HEIGHT * row;
         GLfloat bottom_y = 1 - MAP_STEP_SIZE_HEIGHT * (row + 1);
-		GLfloat left_x = -1 + MAP_STEP_SIZE_WIDTH * column;
-		GLfloat right_x = -1 + MAP_STEP_SIZE_WIDTH * (column + 1);
+        GLfloat left_x = -1 + MAP_STEP_SIZE_WIDTH * column;
+        GLfloat right_x = -1 + MAP_STEP_SIZE_WIDTH * (column + 1);
 
         // TOP LEFT VERTEX
         vertices.push_back(left_x);
@@ -218,17 +217,17 @@ void Scene::drawMap(int map[MAP_HEIGHT*MAP_WIDTH])
         vertices.push_back(color[1]);
         vertices.push_back(color[2]);
 
-        int n = vertices.size()/6;
+        int n = vertices.size() / 6;
 
         // TRIANGLE 1
-        indices.push_back(n-4);
-        indices.push_back(n-3);
-        indices.push_back(n-2);
+        indices.push_back(n - 4);
+        indices.push_back(n - 3);
+        indices.push_back(n - 2);
 
         // TRIANGLE 2
-        indices.push_back(n-3);
-        indices.push_back(n-2);
-        indices.push_back(n-1);
+        indices.push_back(n - 3);
+        indices.push_back(n - 2);
+        indices.push_back(n - 1);
     }
 
     GLuint gridVBO, gridIBO;
@@ -252,5 +251,4 @@ void Scene::drawMap(int map[MAP_HEIGHT*MAP_WIDTH])
     glDeleteBuffers(1, &gridIBO);
 
     glBindVertexArray(0);
-
 }
