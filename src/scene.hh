@@ -13,7 +13,7 @@
 #define MAP_STEP_SIZE_HEIGHT (1.0 / MAP_HEIGHT) * 2
 #define XPIXEL 2 / SCREEN_WDITH
 #define YPIXEL 2 / SCREEN_HEIGHT
-#define MOVEMENT_FACTOR 10
+#define MOVEMENT_FACTOR 30
 #define ROTATION_FACTOR 4
 #define NORMAL_TO_PIXEL(normal) int((normal + 1) * (SCREEN_HEIGHT)/2)
 #define PIXEL_TO_NORMAL(pixel) double(((pixel)*2))/(SCREEN_HEIGHT - 1)

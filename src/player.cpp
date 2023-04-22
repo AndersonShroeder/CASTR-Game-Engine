@@ -190,23 +190,12 @@ void Player::translate(Directions direction)
     }
 }
 
-void Player::projectVectors(int vector1[2], int vector2[2])
+Line Player::castRaysVertical(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH])
 {
-
-}
-
-void Player::castRaysVertical(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH])
-{
-    std::vector<GLfloat> vertices;
-    std::vector<GLuint> indicies;
-    bool up;
-
-    // Vertical LINES
-
     // Slope of direction vector
     double m = (epy-py)/(epx-px);
-
-    // Y-val of closest grid line
+    int checked = 0;
+    bool up;
     
     int pixx = NORMAL_TO_PIXEL(px);
     int x_remainder =  pixx % (CELL_WIDTH);
@@ -223,31 +212,19 @@ void Player::castRaysVertical(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HE
         pixx = x_remainder != 0 ? (pixx - x_remainder): (pixx-(CELL_WIDTH));
     }
 
-    vertices.push_back(px);
-    vertices.push_back(py);
-    vertices.push_back(0.0f);
-
-    vertices.push_back(0.0f);
-    vertices.push_back(1.0f);
-    vertices.push_back(0.0f);
-
-    int checked = 0;
-
-    double xval = double(((pixx)*2))/(SCREEN_HEIGHT) - 1;
-    double yval = m*(xval - px) + py;
+    float xval = double(((pixx)*2))/(SCREEN_HEIGHT) - 1;
+    float yval = m*(xval - px) + py;
 
     while (checked < MAP_HEIGHT)
     {
         int pixy = (yval + 1) * (SCREEN_HEIGHT)/2 + 1;
-        int pixx = (xval + 1) * (SCREEN_WDITH)/2;
+        int pixx = (xval + 1) * (SCREEN_WDITH)/2 + 1;
 
         int x_index = pixx / (CELL_WIDTH);
         int y_index = pixy / (CELL_HEIGHT) - 1;
 
         int index = 90 - (y_index * 10) - (10 - x_index) - 1;
         int index2 = 90 - (y_index * 10) - (10 - x_index);
-
-        std::cout << index2 << '\n';
 
         if (index >= 0 && index <= 99 && index2 >= 0 && index2 <= 99)
         {
@@ -265,35 +242,29 @@ void Player::castRaysVertical(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HE
         
         checked++;
     }
-    
-    
-    vertices.push_back(xval);
-    vertices.push_back(yval);
-    vertices.push_back(0.0f);
 
-    vertices.push_back(0.0f);
-    vertices.push_back(1.0f);
-    vertices.push_back(0.0f);
+    std::vector<GLfloat> vertices
+    {
+        px, py, 0.0f, 0.0f, 1.0f, 0.0f,
+        xval, yval, 0.0f, 0.0f, 1.0f, 0.0f
+    };
 
-    indicies.push_back(0);
-    indicies.push_back(1);
-    
-    renderLines(VAO, shaderProgram, indicies, vertices, 2);
+    // Tie end points to index for rendering
+    std::vector<GLuint> indicies
+    {
+        0, 1
+    };
+
+    return Line{vertices, indicies};
 }
 
-void Player::castRaysHorizontal(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH])
+Line Player::castRaysHorizontal(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH])
 {
-    std::vector<GLfloat> vertices;
-    std::vector<GLuint> indicies;
-    bool up;
-
-    // HORIZTONTAL LINES
-
     // Slope of direction vector
     double m = (epy-py)/(epx-px);
+    int checked = 0;
+    bool up;
 
-    // Y-val of closest grid line
-    
     int pixy = NORMAL_TO_PIXEL(py);
     int y_remainder =  pixy % (CELL_HEIGHT);
 
@@ -309,23 +280,13 @@ void Player::castRaysHorizontal(GLuint &VAO, GLuint &shaderProgram, int map[MAP_
         pixy = y_remainder != 0 ? (pixy - y_remainder): (pixy-(CELL_HEIGHT));
     }
 
-    vertices.push_back(px);
-    vertices.push_back(py);
-    vertices.push_back(0.0f);
-
-    vertices.push_back(1.0f);
-    vertices.push_back(0.0f);
-    vertices.push_back(0.0f);
-
-    int checked = 0;
-
-    double yval = double(((pixy)*2))/(SCREEN_HEIGHT) - 1;
-    double xval = (yval - py)/m + px;
+    float yval = double(((pixy)*2))/(SCREEN_HEIGHT) - 1;
+    float xval = (yval - py)/m + px;
 
     while (checked < MAP_HEIGHT)
     {
         int pixy = (yval + 1) * (SCREEN_HEIGHT)/2 + 1;
-        int pixx = (xval + 1) * (SCREEN_WDITH)/2;
+        int pixx = (xval + 1) * (SCREEN_WDITH)/2 + 1;
 
         int x_index = pixx / (CELL_WIDTH);
         int y_index = pixy / (CELL_HEIGHT) - 1;
@@ -350,25 +311,32 @@ void Player::castRaysHorizontal(GLuint &VAO, GLuint &shaderProgram, int map[MAP_
         checked++;
     }
     
-    
-    vertices.push_back(xval);
-    vertices.push_back(yval);
-    vertices.push_back(0.0f);
+    // Add end points to vertices array
+    std::vector<GLfloat> vertices
+    {
+        px, py, 0.0f, 1.0f, 0.0f, 0.0f,
+        xval, yval, 0.0f, 1.0f, 0.0f, 0.0f
+    };
 
-    vertices.push_back(1.0f);
-    vertices.push_back(0.0f);
-    vertices.push_back(0.0f);
+    // Tie end points to index for rendering
+    std::vector<GLuint> indicies
+    {
+        0, 1
+    };
 
-    indicies.push_back(0);
-    indicies.push_back(1);
-    
-    renderLines(VAO, shaderProgram, indicies, vertices, 10);
+    return Line{vertices, indicies};
 }
 
 void Player::castRays(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH])
 {
-    castRaysHorizontal(VAO, shaderProgram, map);
-    castRaysVertical(VAO, shaderProgram, map);
+    Line line1 = castRaysHorizontal(VAO, shaderProgram, map);
+    Line line2 = castRaysVertical(VAO, shaderProgram, map);
+
+    if (line1.length < line2.length) renderLines(VAO, shaderProgram, line1.indicies, line1.vertices, 5);
+    else renderLines(VAO, shaderProgram, line2.indicies, line2.vertices, 5);
+
+    // renderLines(VAO, shaderProgram, line1.indicies, line1.vertices, 10);
+    // renderLines(VAO, shaderProgram, line2.indicies, line2.vertices, 5);
 }
 
 void Player::renderLines(GLuint &VAO, GLuint &shaderProgram, std::vector<GLuint> indicies, std::vector<GLfloat> vertices, float size)

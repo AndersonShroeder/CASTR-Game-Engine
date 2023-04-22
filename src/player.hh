@@ -1,5 +1,6 @@
 #pragma once
 #include "scene.hh"
+#include <math.h>
 #define PI 3.14159265358
 #define ONE_DEGREE_RADIAN PI / 180
 #define ONE_DEGREE 1
@@ -12,6 +13,7 @@ struct Keys
     bool a_key = false;
     bool s_key = false;
     bool d_key = false;
+    bool shift_key = false;
 };
 
 enum Directions
@@ -20,6 +22,14 @@ enum Directions
     BACKWARD,
     STRAFE_LEFT,
     STRAFE_RIGHT,
+};
+
+struct Line
+{
+    // Verticies is a vector of length 12 containing two points
+    std::vector<GLfloat> vertices;
+    std::vector<GLuint> indicies;
+    float length = sqrt(pow((vertices.at(0) - vertices.at(6)), 2) + pow((vertices.at(1) - vertices.at(7)), 2));
 };
 
 class Player
@@ -94,6 +104,14 @@ public:
             if (action == GLFW_RELEASE)
                 instance->keys.d_key = false;
         }
+
+        if (key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT)
+        {
+            if (action == GLFW_PRESS)
+                instance->keys.shift_key = true;
+            if (action == GLFW_RELEASE)
+                instance->keys.shift_key = false;
+        }
     }
 
     void drawPlayer(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH]);
@@ -106,13 +124,11 @@ public:
 
     void translate(Directions direction);
 
-    void projectVectors(int vector1[2], int vector2[2]);
-
     void castRays(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH]);
 
-    void castRaysVertical(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH]);
+    Line castRaysVertical(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH]);
 
-    void castRaysHorizontal(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH]);
+    Line castRaysHorizontal(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH]);
 
     void renderLines(GLuint &VAO, GLuint &shaderProgram, std::vector<GLuint> indicies, std::vector<GLfloat> vertices, float size);
 };
