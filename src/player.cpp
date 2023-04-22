@@ -195,16 +195,97 @@ void Player::projectVectors(int vector1[2], int vector2[2])
 
 }
 
-void nextLineYVal()
-{
-
-}
-
-void Player::castRays(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH])
+void Player::castRaysVertical(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH])
 {
     std::vector<GLfloat> vertices;
     std::vector<GLuint> indicies;
-    bool angle = false; //True up, false down
+    bool up;
+
+    // Vertical LINES
+
+    // Slope of direction vector
+    double m = (epy-py)/(epx-px);
+
+    // Y-val of closest grid line
+    
+    int pixx = NORMAL_TO_PIXEL(px);
+    int x_remainder =  pixx % (CELL_WIDTH);
+
+    if (angle < 90 || angle > 270)
+    {
+        up = true;
+        pixx = x_remainder != 0 ? (pixx - x_remainder + (CELL_WIDTH)): (pixx+(CELL_WIDTH));
+    }
+
+    else if (angle > 90 && angle < 270)
+    {
+        up = false;
+        pixx = x_remainder != 0 ? (pixx - x_remainder): (pixx-(CELL_WIDTH));
+    }
+
+    vertices.push_back(px);
+    vertices.push_back(py);
+    vertices.push_back(0.0f);
+
+    vertices.push_back(0.0f);
+    vertices.push_back(1.0f);
+    vertices.push_back(0.0f);
+
+    int checked = 0;
+
+    double xval = double(((pixx)*2))/(SCREEN_HEIGHT) - 1;
+    double yval = m*(xval - px) + py;
+
+    while (checked < MAP_HEIGHT)
+    {
+        int pixy = (yval + 1) * (SCREEN_HEIGHT)/2 + 1;
+        int pixx = (xval + 1) * (SCREEN_WDITH)/2;
+
+        int x_index = pixx / (CELL_WIDTH);
+        int y_index = pixy / (CELL_HEIGHT) - 1;
+
+        int index = 90 - (y_index * 10) - (10 - x_index) - 1;
+        int index2 = 90 - (y_index * 10) - (10 - x_index);
+
+        std::cout << index2 << '\n';
+
+        if (index >= 0 && index <= 99 && index2 >= 0 && index2 <= 99)
+        {
+            if (map[index] != 0 || map[index2] != 0)
+            {
+                break;
+            }
+        }
+
+        // Calculate new yval by going up one row in grid
+        if (up) xval += MAP_STEP_SIZE_WIDTH;
+        else xval -= MAP_STEP_SIZE_WIDTH;
+
+        yval = m*(xval - px) + py;
+        
+        checked++;
+    }
+    
+    
+    vertices.push_back(xval);
+    vertices.push_back(yval);
+    vertices.push_back(0.0f);
+
+    vertices.push_back(0.0f);
+    vertices.push_back(1.0f);
+    vertices.push_back(0.0f);
+
+    indicies.push_back(0);
+    indicies.push_back(1);
+    
+    renderLines(VAO, shaderProgram, indicies, vertices, 2);
+}
+
+void Player::castRaysHorizontal(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH])
+{
+    std::vector<GLfloat> vertices;
+    std::vector<GLuint> indicies;
+    bool up;
 
     // HORIZTONTAL LINES
 
@@ -212,25 +293,21 @@ void Player::castRays(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * M
     double m = (epy-py)/(epx-px);
 
     // Y-val of closest grid line
-    double yval;
+    
+    int pixy = NORMAL_TO_PIXEL(py);
+    int y_remainder =  pixy % (CELL_HEIGHT);
 
     if (angle < 180)
     {
-        angle = true;
-        int pixy = (py + 1) * (SCREEN_HEIGHT)/2;
-        int remainder =  pixy % (CELL_HEIGHT);
-        yval = remainder != 0 ? float((pixy - remainder + (CELL_HEIGHT))*2)/float(SCREEN_HEIGHT) - 1 : float((pixy+(CELL_HEIGHT))*2)/float(SCREEN_HEIGHT) - 1;
+        up = true;
+        pixy = y_remainder != 0 ? (pixy - y_remainder + (CELL_HEIGHT)): (pixy+(CELL_HEIGHT));
     }
 
     else if (angle > 180)
     {
-        angle = false;
-        int pixy = (py + 1) * (SCREEN_HEIGHT)/2;
-        int remainder =  pixy % (CELL_HEIGHT);
-        yval = remainder != 0 ? float(pixy - remainder)*2/float(SCREEN_HEIGHT) - 1 : float(pixy-(CELL_HEIGHT))*2/float(SCREEN_HEIGHT) - 1;
+        up = false;
+        pixy = y_remainder != 0 ? (pixy - y_remainder): (pixy-(CELL_HEIGHT));
     }
-
-    double xval = (yval - py)/m + px;
 
     vertices.push_back(px);
     vertices.push_back(py);
@@ -242,26 +319,37 @@ void Player::castRays(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * M
 
     int checked = 0;
 
+    double yval = double(((pixy)*2))/(SCREEN_HEIGHT) - 1;
+    double xval = (yval - py)/m + px;
+
     while (checked < MAP_HEIGHT)
     {
-        int index = 90 - ((int((yval + 1) * (SCREEN_HEIGHT)/2) / (CELL_HEIGHT)) * 10) + (int((xval + 1) * (SCREEN_WDITH)/2) / (CELL_WIDTH));
+        int pixy = (yval + 1) * (SCREEN_HEIGHT)/2 + 1;
+        int pixx = (xval + 1) * (SCREEN_WDITH)/2;
 
-        if (index >= 0 && index <= 99)
+        int x_index = pixx / (CELL_WIDTH);
+        int y_index = pixy / (CELL_HEIGHT) - 1;
+
+        int index = (90 -  y_index * (MAP_HEIGHT)) + x_index;
+        int index2 = 90 - (y_index * 10) - (10 - x_index);
+
+        if (index >= 0 && index <= 99 && index2 >= 0 && index2 <= 99)
         {
-            if (map[index] != 0)
+            if (map[index] != 0 || map[index2] != 0)
             {
                 break;
             }
         }
 
         // Calculate new yval by going up one row in grid
-        // if (angle) yval += MAP_STEP_SIZE_HEIGHT;
-        yval -= MAP_STEP_SIZE_HEIGHT;
+        if (up) yval += MAP_STEP_SIZE_HEIGHT;
+        else yval -= MAP_STEP_SIZE_HEIGHT;
 
         xval = (yval - py)/m + px;
-
+        
         checked++;
     }
+    
     
     vertices.push_back(xval);
     vertices.push_back(yval);
@@ -274,10 +362,16 @@ void Player::castRays(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * M
     indicies.push_back(0);
     indicies.push_back(1);
     
-    renderLines(VAO, shaderProgram, indicies, vertices);
+    renderLines(VAO, shaderProgram, indicies, vertices, 10);
 }
 
-void Player::renderLines(GLuint &VAO, GLuint &shaderProgram, std::vector<GLuint> indicies, std::vector<GLfloat> vertices)
+void Player::castRays(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH])
+{
+    castRaysHorizontal(VAO, shaderProgram, map);
+    castRaysVertical(VAO, shaderProgram, map);
+}
+
+void Player::renderLines(GLuint &VAO, GLuint &shaderProgram, std::vector<GLuint> indicies, std::vector<GLfloat> vertices, float size)
 {
 
     glBindVertexArray(VAO);
@@ -296,7 +390,7 @@ void Player::renderLines(GLuint &VAO, GLuint &shaderProgram, std::vector<GLuint>
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void *)(3 * sizeof(GLfloat)));
 
-    glLineWidth(5.0f);
+    glLineWidth(size);
     glDrawElements(GL_LINES, indicies.size(), GL_UNSIGNED_INT, 0);
     glLineWidth(1.0f);
 
