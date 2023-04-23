@@ -40,7 +40,7 @@ GLFWwindow *Scene::initWindow()
     gladLoadGL();
 
     glfwSwapInterval(1);
-    glViewport(0, 0, SCREEN_WDITH, SCREEN_HEIGHT);
+    glViewport(0, 0, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT);
 
     return window;
 }

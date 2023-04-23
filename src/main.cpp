@@ -13,7 +13,7 @@ int map[SCREEN_WDITH * SCREEN_HEIGHT] =
 		1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 		1, 0, 0, 0, 0, 1, 0, 0, 0, 1,
 		1, 0, 0, 1, 0, 0, 0, 0, 0, 1,
-		1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+		1, 0, 0, 0, 0, 0, 1, 1, 0, 1,
 		1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 };
@@ -22,12 +22,12 @@ int main()
 {
 	Scene scene;
 
-	Player player(0, 0, scene.window, scene.VAO, scene.shaderProgram, map);
+	Player player(-.5, 0, scene.window, scene.VAO, scene.shaderProgram, map);
 
 	while (!glfwWindowShouldClose(scene.window))
 	{
 		glClear(GL_COLOR_BUFFER_BIT);
-		glClearColor(1.0, 1.0, 0, 0);
+		glClearColor(0.2, 0.2, 0.2, 1);
 
 		scene.drawMap(map);
 		scene.drawGrid();

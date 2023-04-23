@@ -17,6 +17,10 @@ enum ConversionType
 {
     VERTICAL,
     HORIZONTAL,
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT,
 };
 
 struct Keys
@@ -33,26 +37,30 @@ struct Keys
 // Converts a normalized x, y coordinate to a grid index.
 struct Point
 {
+    int index;
     int index1;
     int index2;
 
-    Point(float xval, float yval, ConversionType type)
+    Point(float xval, float yval, ConversionType type, ConversionType direction)
     {
-        int pixy = (yval + 1) * (SCREEN_HEIGHT)/2.0 + 0.5;
-        int pixx = (xval + 1) * (SCREEN_WDITH)/2.0 + 0.5;
+        int pixy = (yval + 1) * (SCREEN_HEIGHT)/2.0 + .5f;
+        int pixx = (xval + 1) * (SCREEN_WDITH) + 1;
 
-        int xIndex = ((pixx) / float(CELL_WIDTH));
-        int yIndex = ((pixy) / float(CELL_HEIGHT)) - 1;
+        int xIndex = floor((pixx) / float(CELL_WIDTH*2));
+        int yIndex = floor(((pixy) / float(CELL_HEIGHT)));
 
         switch (type)
         {
         case (HORIZONTAL):
-            index1 = (90 -  yIndex * (MAP_HEIGHT)) + xIndex; index2 = 90 - (yIndex * 10) - (10 - xIndex);
+            index = (100 - yIndex * (MAP_HEIGHT)) + xIndex;
+            index -= direction == UP ? MAP_WIDTH : 0;
             break;
 
         case (VERTICAL):
-            index1 = 90 - (yIndex * 10) - (10 - xIndex) - 1; index2 = 90 - (yIndex * 10) - (10 - xIndex);
+            index = 100 - (yIndex * 10) - (10 - xIndex); 
+            index -= direction == RIGHT ? 0 : 1;
             break;
+
         default:
             break;
         }
@@ -60,9 +68,9 @@ struct Point
 
     bool intersection(int *map)
     {
-        if (index1 >= 0 && index1 <= 99 && index2 >= 0 && index2 <= 99)
+        if (index >= 0 && index <= 99)
         {
-            if (map[index1] != 0 || map[index2] != 0)
+            if (map[index] != 0)
             {
                 return true;
             }

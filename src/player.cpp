@@ -27,12 +27,13 @@ void Player::castRays(int FOV)
     std::vector<GLuint> indicies;
 
     unsigned int index = 0;
-    for (int i = -FOV/2; i <= FOV/2; i++)
+    for (int i = -FOV/2; i < FOV/2; i++)
     {
+        
         int newAngle = (angle + i);
         if (newAngle > 360) newAngle -= 360;
         else if (newAngle < 0) newAngle = 360 + newAngle;
-        float newAngleRadian = newAngle * (ONE_DEGREE_RADIAN);
+        float newAngleRadian = newAngle * ((ONE_DEGREE_RADIAN));
         float rpx = cos(newAngleRadian) * (.1) - sin(newAngleRadian) * (0) + px;
         float rpy = sin(newAngleRadian) * (.1) - cos(newAngleRadian) * (0) + py;
         const float slope = (rpy-py)/(rpx-px);
@@ -45,12 +46,13 @@ void Player::castRays(int FOV)
 
         // Draw 3d
         Line drawLine = (line1.length() < line2.length()) ? line1 : line2;
-        float lineHeight = (MAP_STEP_SIZE_HEIGHT) / drawLine.length(); if (lineHeight > 1){lineHeight = 1;}
+        float distance =  4 * drawLine.length() * cos((angle - newAngle) * ONE_DEGREE_RADIAN);
+        float lineHeight = (MAP_STEP_SIZE_HEIGHT) / distance; if (lineHeight > 1){lineHeight = 1;}\
 
         verticies.insert(verticies.end(), 
             {
-                (2/float(FOV) * index) + .5f, -1, 0.0f,                1.0f, 0.0f, 0.0f,
-                (2/float(FOV) * (index + 1)) + .5f, lineHeight, 0.0f,   1.0f, 0.0f, 0.0f
+                (1 - 1/(float(FOV)*2) * index), lineHeight, 0.0f,   1.0f, 0.0f, 0.0f,
+                (1 - 1/(float(FOV)*2) * index), -lineHeight, 0.0f,  1.0f, 0.0f, 0.0f
             }
         );
 
@@ -59,9 +61,9 @@ void Player::castRays(int FOV)
                 index++, index++
             }
         );
-
-        renderLines(Line{verticies, indicies}, 800/FOV);
     }
+
+    renderLines(Line{verticies, indicies}, 40);
 }
 
 Line Player::castRaysVertical(int newAngle, double slope)
@@ -79,7 +81,7 @@ Line Player::castRaysVertical(int newAngle, double slope)
     while (colsChecked < MAP_WIDTH)
     {
         // Check for intersection
-        Point point{xval, yval, VERTICAL};
+        Point point{xval, yval, VERTICAL, isLookingRight ? RIGHT : LEFT};
         // break;
         if (point.intersection(this->map)) break;
 
@@ -113,6 +115,7 @@ Line Player::castRaysHorizontal(int newAngle, double slope)
     int pixy = NORMAL_TO_PIXEL_Y(py);
     int y_remainder =  pixy % (CELL_HEIGHT);
     pixy = isLookingUp ? pixy - y_remainder + (CELL_HEIGHT) : (pixy - y_remainder);
+    
 
     float yval = double(((pixy)*2))/(SCREEN_HEIGHT) - 1;
     float xval = (yval - py)/slope + px;
@@ -120,7 +123,7 @@ Line Player::castRaysHorizontal(int newAngle, double slope)
     while (checked < MAP_HEIGHT)
     {
         // Check for intersection with wall
-        Point point{xval, yval, HORIZONTAL};
+        Point point{xval, yval, HORIZONTAL, isLookingUp ? UP : DOWN};
         // break;
         if (point.intersection(this->map)) break;
 
