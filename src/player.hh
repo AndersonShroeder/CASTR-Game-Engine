@@ -5,6 +5,20 @@
 #define ONE_DEGREE_RADIAN PI / 180
 #define ONE_DEGREE 1
 
+enum Directions
+{
+    FORWARD,
+    BACKWARD,
+    STRAFE_LEFT,
+    STRAFE_RIGHT,
+};
+
+enum ConversionType
+{
+    VERTICAL,
+    HORIZONTAL,
+};
+
 struct Keys
 {
     bool e_key = false;
@@ -16,12 +30,46 @@ struct Keys
     bool shift_key = false;
 };
 
-enum Directions
+// Converts a normalized x, y coordinate to a grid index.
+struct Point
 {
-    FORWARD,
-    BACKWARD,
-    STRAFE_LEFT,
-    STRAFE_RIGHT,
+    int index1;
+    int index2;
+
+    Point(float xval, float yval, ConversionType type)
+    {
+        int pixy = (yval + 1) * (SCREEN_HEIGHT)/2.0 + 0.5;
+        int pixx = (xval + 1) * (SCREEN_WDITH)/2.0 + 0.5;
+
+        int xIndex = ((pixx) / float(CELL_WIDTH));
+        int yIndex = ((pixy) / float(CELL_HEIGHT)) - 1;
+
+        switch (type)
+        {
+        case (HORIZONTAL):
+            index1 = (90 -  yIndex * (MAP_HEIGHT)) + xIndex; index2 = 90 - (yIndex * 10) - (10 - xIndex);
+            break;
+
+        case (VERTICAL):
+            index1 = 90 - (yIndex * 10) - (10 - xIndex) - 1; index2 = 90 - (yIndex * 10) - (10 - xIndex);
+            break;
+        default:
+            break;
+        }
+    }
+
+    bool intersection(int *map)
+    {
+        if (index1 >= 0 && index1 <= 99 && index2 >= 0 && index2 <= 99)
+        {
+            if (map[index1] != 0 || map[index2] != 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 };
 
 struct Line
@@ -29,7 +77,11 @@ struct Line
     // Verticies is a vector of length 12 containing two points
     std::vector<GLfloat> vertices;
     std::vector<GLuint> indicies;
-    float length = sqrt(pow((vertices.at(0) - vertices.at(6)), 2) + pow((vertices.at(1) - vertices.at(7)), 2));
+
+    float length()
+    {
+        return sqrt(pow((vertices.at(0) - vertices.at(6)), 2) + pow((vertices.at(1) - vertices.at(7)), 2));
+    }
 };
 
 class Player
@@ -48,10 +100,14 @@ private:
 
     Keys keys;
 
+    GLuint VAO;
+    GLuint shaderProgram;
+    int* map;
+
     GLfloat color[3] = {1.0f, 1.0f, 0.0f};
 
 public:
-    Player(float px, float py, GLFWwindow *window);
+    Player(float px, float py, GLFWwindow *window, const GLuint &VAO, const GLuint &shaderProgram, int map[MAP_HEIGHT*MAP_WIDTH]);
 
     static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
     {
@@ -114,21 +170,21 @@ public:
         }
     }
 
-    void drawPlayer(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH]);
+    void drawPlayer();
 
-    void drawDot(GLuint &VAO, GLuint &shaderProgram);
+    void castRays(int FOV);
+    
+    Line castRaysVertical(int newAngle, double slope);
 
-    void drawLine(GLuint &VAO, GLuint &shaderProgram);
+    Line castRaysHorizontal(int newAngle, double slope);
 
     void checkKeys();
 
     void translate(Directions direction);
 
-    void castRays(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH]);
+    void drawDot();
 
-    Line castRaysVertical(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH]);
+    void drawLine();
 
-    Line castRaysHorizontal(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH]);
-
-    void renderLines(GLuint &VAO, GLuint &shaderProgram, std::vector<GLuint> indicies, std::vector<GLfloat> vertices, float size);
+    void renderLines(Line line, float size);
 };

@@ -1,108 +1,150 @@
 #include "player.hh"
 #include "math.h"
 
-Player::Player(float px, float py, GLFWwindow *window)
+Player::Player(float px, float py, GLFWwindow *window, const GLuint &VAO, const GLuint &shaderProgram, int map[MAP_HEIGHT*MAP_WIDTH])
 {
     this->px = px;
     this->py = py;
+    this->VAO = VAO;
+    this->shaderProgram = shaderProgram;
+    this->map = map;
 
     glfwSetWindowUserPointer(window, this);
     glfwSetKeyCallback(window, key_callback);
 }
 
-void Player::drawPlayer(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH])
+void Player::drawPlayer()
 {
     checkKeys();
-    drawDot(VAO, shaderProgram);
-    drawLine(VAO, shaderProgram);
-    castRays(VAO, shaderProgram, map);
+    drawDot();
+    drawLine();
+    castRays(60);
 }
 
-void Player::drawDot(GLuint &VAO, GLuint &shaderProgram)
+void Player::castRays(int FOV)
 {
-    GLfloat vertices[6] = {px, py, 0.0f, color[0], color[1], color[2]};
+    std::vector<GLfloat> verticies;
+    std::vector<GLuint> indicies;
 
-    glBindVertexArray(VAO);
+    unsigned int index = 0;
+    for (int i = -FOV/2; i <= FOV/2; i++)
+    {
+        int newAngle = (angle + i);
+        if (newAngle > 360) newAngle -= 360;
+        else if (newAngle < 0) newAngle = 360 + newAngle;
+        float newAngleRadian = newAngle * (ONE_DEGREE_RADIAN);
+        float rpx = cos(newAngleRadian) * (.1) - sin(newAngleRadian) * (0) + px;
+        float rpy = sin(newAngleRadian) * (.1) - cos(newAngleRadian) * (0) + py;
+        const float slope = (rpy-py)/(rpx-px);
 
-    GLuint VBO;
-    glGenBuffers(1, &VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        Line line1 = castRaysHorizontal(newAngle, slope);
+        Line line2 = castRaysVertical(newAngle, slope);
 
-    // Set up the vertex attribute pointers
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void *)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void *)(3 * sizeof(GLfloat)));
+        // Render shortest line
+        (line1.length() < line2.length()) ? renderLines(line1, 5) : renderLines(line2, 5);
 
-    glPointSize(10.0f);
-    glDrawArrays(GL_POINTS, 0, 1);
-    glPointSize(1.0f);
+        // Draw 3d
+        Line drawLine = (line1.length() < line2.length()) ? line1 : line2;
+        float lineHeight = (MAP_STEP_SIZE_HEIGHT) / drawLine.length(); if (lineHeight > 1){lineHeight = 1;}
 
-    glDeleteBuffers(1, &VBO);
+        verticies.insert(verticies.end(), 
+            {
+                (2/float(FOV) * index) + .5f, -1, 0.0f,                1.0f, 0.0f, 0.0f,
+                (2/float(FOV) * (index + 1)) + .5f, lineHeight, 0.0f,   1.0f, 0.0f, 0.0f
+            }
+        );
 
-    glBindVertexArray(0);
+        indicies.insert(indicies.end(),
+            {
+                index++, index++
+            }
+        );
+
+        renderLines(Line{verticies, indicies}, 800/FOV);
+    }
 }
 
-void Player::drawLine(GLuint &VAO, GLuint &shaderProgram)
+Line Player::castRaysVertical(int newAngle, double slope)
 {
-    float radian_angle = angle * ONE_DEGREE_RADIAN;
+    int colsChecked = 0;
+    bool isLookingRight = (newAngle < 90 || newAngle > 270);
+    
+    int pixx = NORMAL_TO_PIXEL_X(px);
+    int x_remainder =  pixx % (CELL_WIDTH);
+    pixx = isLookingRight ? pixx + (CELL_WIDTH - x_remainder) : pixx - x_remainder;
 
-    // recalculate Line end point positions to account for rotation
-    float rot_epx = cos(radian_angle) * (.1) - sin(radian_angle) * (0) + px;
-    float rot_epy = sin(radian_angle) * (.1) + cos(radian_angle) * (0) + py;
+    float xval = float(((pixx)*2))/(SCREEN_HEIGHT) - 1;
+    float yval = slope*(xval - px) + py;
 
-    epx = rot_epx;
-    epy = rot_epy;
+    while (colsChecked < MAP_WIDTH)
+    {
+        // Check for intersection
+        Point point{xval, yval, VERTICAL};
+        // break;
+        if (point.intersection(this->map)) break;
 
-    // global_angle += angle;
+        // Calculate new yval by going up one row in grid
+        xval += isLookingRight ? MAP_STEP_SIZE_WIDTH : -MAP_STEP_SIZE_WIDTH;
+        yval = slope*(xval - px) + py;
+        
+        colsChecked++;
+    }
 
-    // angle = 0;
+    std::vector<GLfloat> vertices
+    {
+        px, py, 0.0f, 0.0f, 1.0f, 0.0f,
+        xval, yval, 0.0f, 0.0f, 1.0f, 0.0f
+    };
 
-    GLfloat vertices[12] =
-        {
-            px,
-            py,
-            0.0f,
-            color[0],
-            color[1],
-            color[2], // Start point
-            rot_epx,
-            rot_epy,
-            0.0f,
-            color[0],
-            color[1],
-            color[2],
-        };
+    // Tie end points to index for rendering
+    std::vector<GLuint> indicies
+    {
+        0, 1
+    };
 
-    GLuint indicies[2] =
-        {
-            0, 1};
+    return Line{vertices, indicies};
+}
 
-    glBindVertexArray(VAO);
+Line Player::castRaysHorizontal(int newAngle, double slope)
+{
+    int checked = 0;
+    bool isLookingUp = newAngle < 180;
 
-    GLuint gridVBO, gridIBO;
-    glGenBuffers(1, &gridVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, gridVBO);
-    glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(GLfloat), vertices, GL_STATIC_DRAW);
+    int pixy = NORMAL_TO_PIXEL_Y(py);
+    int y_remainder =  pixy % (CELL_HEIGHT);
+    pixy = isLookingUp ? pixy - y_remainder + (CELL_HEIGHT) : (pixy - y_remainder);
 
-    glGenBuffers(1, &gridIBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gridIBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 2 * sizeof(GLuint), indicies, GL_STATIC_DRAW);
+    float yval = double(((pixy)*2))/(SCREEN_HEIGHT) - 1;
+    float xval = (yval - py)/slope + px;
 
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void *)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void *)(3 * sizeof(GLfloat)));
+    while (checked < MAP_HEIGHT)
+    {
+        // Check for intersection with wall
+        Point point{xval, yval, HORIZONTAL};
+        // break;
+        if (point.intersection(this->map)) break;
 
-    glLineWidth(5.0f);
-    glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT, 0);
-    glLineWidth(1.0f);
+        // Calculate new yval by going up one row in grid
+        yval += isLookingUp ? MAP_STEP_SIZE_HEIGHT : -MAP_STEP_SIZE_HEIGHT;
+        xval = (yval - py)/slope + px;
+        
+        checked++;
+    }
+    
+    // Add end points to vertices array
+    std::vector<GLfloat> vertices
+    {
+        px, py, 0.0f, 1.0f, 0.0f, 0.0f,
+        xval, yval, 0.0f, 1.0f, 0.0f, 0.0f
+    };
 
-    glDeleteBuffers(1, &gridVBO);
-    glDeleteBuffers(1, &gridIBO);
+    // Tie end points to index for rendering
+    std::vector<GLuint> indicies
+    {
+        0, 1
+    };
 
-    glBindVertexArray(0);
+    return Line{vertices, indicies};
 }
 
 void Player::checkKeys()
@@ -134,11 +176,8 @@ void Player::translate(Directions direction)
         float dpx = (epx - px) * XPIXEL * MOVEMENT_FACTOR;
         float dpy = (epy - py) * YPIXEL * MOVEMENT_FACTOR;
 
-        px += dpx;
-        py += dpy;
-
-        epx += dpx;
-        epy += dpy;
+        px += dpx; py += dpy;
+        epx += dpx; epy += dpy;
 
         break;
     }
@@ -148,11 +187,8 @@ void Player::translate(Directions direction)
         float dpx = (epx - px) * XPIXEL * MOVEMENT_FACTOR;
         float dpy = (epy - py) * YPIXEL * MOVEMENT_FACTOR;
 
-        px -= dpx;
-        py -= dpy;
-
-        epx -= dpx;
-        epy -= dpy;
+        px -= dpx; py -= dpy;
+        epx -= dpx; epy -= dpy;
 
         break;
     }
@@ -162,11 +198,8 @@ void Player::translate(Directions direction)
         float dpy = (epx - px) * XPIXEL * MOVEMENT_FACTOR;
         float dpx = -1 * (epy - py) * YPIXEL * MOVEMENT_FACTOR;
 
-        px += dpx;
-        py += dpy;
-
-        epx += dpx;
-        epy += dpy;
+        px += dpx; py += dpy;
+        epx += dpx; epy += dpy;
 
         break;
     }
@@ -176,11 +209,8 @@ void Player::translate(Directions direction)
         float dpy = -1 * (epx - px) * XPIXEL * MOVEMENT_FACTOR;
         float dpx = (epy - py) * YPIXEL * MOVEMENT_FACTOR;
 
-        px += dpx;
-        py += dpy;
-
-        epx += dpx;
-        epy += dpy;
+        px += dpx; py += dpy;
+        epx += dpx; epy += dpy;
 
         break;
     }
@@ -190,156 +220,58 @@ void Player::translate(Directions direction)
     }
 }
 
-Line Player::castRaysVertical(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH])
+void Player::drawDot()
 {
-    // Slope of direction vector
-    double m = (epy-py)/(epx-px);
-    int checked = 0;
-    bool up;
-    
-    int pixx = NORMAL_TO_PIXEL(px);
-    int x_remainder =  pixx % (CELL_WIDTH);
+    GLfloat vertices[6] = {px, py, 0.0f, color[0], color[1], color[2]};
 
-    if (angle < 90 || angle > 270)
+    glBindVertexArray(VAO);
+
+    GLuint VBO;
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // Set up the vertex attribute pointers
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void *)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void *)(3 * sizeof(GLfloat)));
+
+    glPointSize(10.0f);
+    glDrawArrays(GL_POINTS, 0, 1);
+    glPointSize(1.0f);
+
+    glDeleteBuffers(1, &VBO);
+
+    glBindVertexArray(0);
+}
+
+void Player::drawLine()
+{
+    float radian_angle = angle * ONE_DEGREE_RADIAN;
+
+    // recalculate Line end point positions to account for rotation
+    float rot_epx = cos(radian_angle) * (.1) - sin(radian_angle) * (0) + px;
+    float rot_epy = sin(radian_angle) * (.1) + cos(radian_angle) * (0) + py;
+
+    epx = rot_epx;
+    epy = rot_epy;
+
+    std::vector<GLfloat> vertices =
     {
-        up = true;
-        pixx = x_remainder != 0 ? (pixx - x_remainder + (CELL_WIDTH)): (pixx+(CELL_WIDTH));
-    }
-
-    else if (angle > 90 && angle < 270)
-    {
-        up = false;
-        pixx = x_remainder != 0 ? (pixx - x_remainder): (pixx-(CELL_WIDTH));
-    }
-
-    float xval = double(((pixx)*2))/(SCREEN_HEIGHT) - 1;
-    float yval = m*(xval - px) + py;
-
-    while (checked < MAP_HEIGHT)
-    {
-        int pixy = (yval + 1) * (SCREEN_HEIGHT)/2 + 1;
-        int pixx = (xval + 1) * (SCREEN_WDITH)/2 + 1;
-
-        int x_index = pixx / (CELL_WIDTH);
-        int y_index = pixy / (CELL_HEIGHT) - 1;
-
-        int index = 90 - (y_index * 10) - (10 - x_index) - 1;
-        int index2 = 90 - (y_index * 10) - (10 - x_index);
-
-        if (index >= 0 && index <= 99 && index2 >= 0 && index2 <= 99)
-        {
-            if (map[index] != 0 || map[index2] != 0)
-            {
-                break;
-            }
-        }
-
-        // Calculate new yval by going up one row in grid
-        if (up) xval += MAP_STEP_SIZE_WIDTH;
-        else xval -= MAP_STEP_SIZE_WIDTH;
-
-        yval = m*(xval - px) + py;
-        
-        checked++;
-    }
-
-    std::vector<GLfloat> vertices
-    {
-        px, py, 0.0f, 0.0f, 1.0f, 0.0f,
-        xval, yval, 0.0f, 0.0f, 1.0f, 0.0f
+        px, py, 0.0f,           color[0], color[1], color[2], // Start point
+        rot_epx, rot_epy, 0.0f, color[0], color[1], color[2],
     };
 
-    // Tie end points to index for rendering
     std::vector<GLuint> indicies
     {
         0, 1
     };
 
-    return Line{vertices, indicies};
+    renderLines(Line{vertices, indicies}, 3);
 }
 
-Line Player::castRaysHorizontal(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH])
-{
-    // Slope of direction vector
-    double m = (epy-py)/(epx-px);
-    int checked = 0;
-    bool up;
-
-    int pixy = NORMAL_TO_PIXEL(py);
-    int y_remainder =  pixy % (CELL_HEIGHT);
-
-    if (angle < 180)
-    {
-        up = true;
-        pixy = y_remainder != 0 ? (pixy - y_remainder + (CELL_HEIGHT)): (pixy+(CELL_HEIGHT));
-    }
-
-    else if (angle > 180)
-    {
-        up = false;
-        pixy = y_remainder != 0 ? (pixy - y_remainder): (pixy-(CELL_HEIGHT));
-    }
-
-    float yval = double(((pixy)*2))/(SCREEN_HEIGHT) - 1;
-    float xval = (yval - py)/m + px;
-
-    while (checked < MAP_HEIGHT)
-    {
-        int pixy = (yval + 1) * (SCREEN_HEIGHT)/2 + 1;
-        int pixx = (xval + 1) * (SCREEN_WDITH)/2 + 1;
-
-        int x_index = pixx / (CELL_WIDTH);
-        int y_index = pixy / (CELL_HEIGHT) - 1;
-
-        int index = (90 -  y_index * (MAP_HEIGHT)) + x_index;
-        int index2 = 90 - (y_index * 10) - (10 - x_index);
-
-        if (index >= 0 && index <= 99 && index2 >= 0 && index2 <= 99)
-        {
-            if (map[index] != 0 || map[index2] != 0)
-            {
-                break;
-            }
-        }
-
-        // Calculate new yval by going up one row in grid
-        if (up) yval += MAP_STEP_SIZE_HEIGHT;
-        else yval -= MAP_STEP_SIZE_HEIGHT;
-
-        xval = (yval - py)/m + px;
-        
-        checked++;
-    }
-    
-    // Add end points to vertices array
-    std::vector<GLfloat> vertices
-    {
-        px, py, 0.0f, 1.0f, 0.0f, 0.0f,
-        xval, yval, 0.0f, 1.0f, 0.0f, 0.0f
-    };
-
-    // Tie end points to index for rendering
-    std::vector<GLuint> indicies
-    {
-        0, 1
-    };
-
-    return Line{vertices, indicies};
-}
-
-void Player::castRays(GLuint &VAO, GLuint &shaderProgram, int map[MAP_HEIGHT * MAP_WIDTH])
-{
-    Line line1 = castRaysHorizontal(VAO, shaderProgram, map);
-    Line line2 = castRaysVertical(VAO, shaderProgram, map);
-
-    if (line1.length < line2.length) renderLines(VAO, shaderProgram, line1.indicies, line1.vertices, 5);
-    else renderLines(VAO, shaderProgram, line2.indicies, line2.vertices, 5);
-
-    // renderLines(VAO, shaderProgram, line1.indicies, line1.vertices, 10);
-    // renderLines(VAO, shaderProgram, line2.indicies, line2.vertices, 5);
-}
-
-void Player::renderLines(GLuint &VAO, GLuint &shaderProgram, std::vector<GLuint> indicies, std::vector<GLfloat> vertices, float size)
+void Player::renderLines(Line line, float size)
 {
 
     glBindVertexArray(VAO);
@@ -347,11 +279,11 @@ void Player::renderLines(GLuint &VAO, GLuint &shaderProgram, std::vector<GLuint>
     GLuint gridVBO, gridIBO;
     glGenBuffers(1, &gridVBO);
     glBindBuffer(GL_ARRAY_BUFFER, gridVBO);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, line.vertices.size() * sizeof(GLfloat), line.vertices.data(), GL_STATIC_DRAW);
 
     glGenBuffers(1, &gridIBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gridIBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicies.size() * sizeof(GLuint), indicies.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, line.indicies.size() * sizeof(GLuint), line.indicies.data(), GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void *)0);
@@ -359,7 +291,7 @@ void Player::renderLines(GLuint &VAO, GLuint &shaderProgram, std::vector<GLuint>
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void *)(3 * sizeof(GLfloat)));
 
     glLineWidth(size);
-    glDrawElements(GL_LINES, indicies.size(), GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_LINES, line.indicies.size(), GL_UNSIGNED_INT, 0);
     glLineWidth(1.0f);
 
     glDeleteBuffers(1, &gridVBO);

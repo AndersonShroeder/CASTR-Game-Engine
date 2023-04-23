@@ -8,11 +8,11 @@ int map[SCREEN_WDITH * SCREEN_HEIGHT] =
 	{
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 		1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-		1, 0, 0, 0, 1, 0, 1, 0, 0, 1,
-		1, 0, 0, 0, 1, 0, 1, 0, 0, 1,
-		1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+		1, 0, 1, 0, 0, 0, 1, 0, 0, 1,
 		1, 0, 0, 0, 1, 0, 0, 0, 0, 1,
 		1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+		1, 0, 0, 0, 0, 1, 0, 0, 0, 1,
+		1, 0, 0, 1, 0, 0, 0, 0, 0, 1,
 		1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 		1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -22,7 +22,7 @@ int main()
 {
 	Scene scene;
 
-	Player player(0, 0, scene.window);
+	Player player(0, 0, scene.window, scene.VAO, scene.shaderProgram, map);
 
 	while (!glfwWindowShouldClose(scene.window))
 	{
@@ -31,7 +31,7 @@ int main()
 
 		scene.drawMap(map);
 		scene.drawGrid();
-		player.drawPlayer(scene.VAO, scene.shaderProgram, map);
+		player.drawPlayer();
 
 		glfwSwapBuffers(scene.window);
 

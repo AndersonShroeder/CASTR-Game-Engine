@@ -27,7 +27,7 @@ GLFWwindow *Scene::initWindow()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow *window = glfwCreateWindow(SCREEN_WDITH, SCREEN_HEIGHT, "RayCasterEngine", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, "RayCasterEngine", NULL, NULL);
 
     if (window == NULL)
     {
@@ -100,7 +100,7 @@ void Scene::drawGrid()
     std::vector<GLuint> indices;
 
     // Add the vertical lines to the vertex buffer
-    for (GLfloat x = -1.0f; x <= 1.0f; x += MAP_STEP_SIZE_HEIGHT)
+    for (GLfloat x = FIRST_WINDOW_LEFT_EDGE; x <= FIRST_WINDOW_RIGHT_EDGE; x += MAP_STEP_SIZE_WIDTH)
     {
         vertices.push_back(x);
         vertices.push_back(-1.0f);
@@ -117,11 +117,11 @@ void Scene::drawGrid()
     // Add the horizontal lines to the vertex buffer
     for (GLfloat y = -1.0f; y <= 1.0f; y += MAP_STEP_SIZE_HEIGHT)
     {
-        vertices.push_back(-1.0f);
+        vertices.push_back(FIRST_WINDOW_LEFT_EDGE);
         vertices.push_back(y);
         vertices.push_back(0.0f);
 
-        vertices.push_back(1.0f);
+        vertices.push_back(FIRST_WINDOW_RIGHT_EDGE);
         vertices.push_back(y);
         vertices.push_back(0.0f);
 
