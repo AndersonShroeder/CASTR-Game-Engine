@@ -3,6 +3,9 @@
 
 Player::Player(float px, float py, GLFWwindow *window, const GLuint &VAO, const GLuint &shaderProgram, int map[MAP_HEIGHT*MAP_WIDTH])
 {
+    this->vPlayer = vf2d{px, py};
+    this->vRayDir = vf2d{px + .05, py};
+    this->camera = CameraPlane{{px + .05, py -.05f}, {px + .05, py +.05f}};
     this->px = px;
     this->py = py;
     this->VAO = VAO;
@@ -13,12 +16,114 @@ Player::Player(float px, float py, GLFWwindow *window, const GLuint &VAO, const 
     glfwSetKeyCallback(window, key_callback);
 }
 
-void Player::drawPlayer()
+void Player::drawPlayer(Renderer& renderer)
 {
     checkKeys();
-    drawDot();
+    renderer.renderPoint(vPlayer, color);
     drawLine();
-    castRays(60);
+    DDA();
+    // castRays(90);
+}
+
+void Player::DDA()
+{
+    // ALL VECTORS ARE IN TERMS OF GRID BLOCKS
+    const vf2d vRayStart{(vPlayer.x + 1)*10/2, (vPlayer.y + 1)*10/2};
+    vf2d vRayDirReal= (vf2d{(vRayDir.x + 1)*10/2, (vRayDir.y + 1)*10/2} - vRayStart).norm();
+    // std::cout << vRayStart.x << " : " << vRayStart.y << '\n';
+    // std::cout << vRayDirReal.x << " : " << vRayDirReal.y << '\n';
+
+
+    vf2d vRayUnitStepSize = {abs(1/vRayDirReal.x), abs(1/vRayDirReal.y)};
+    // std::cout << vRayUnitStepSize.y/vRayUnitStepSize.x  << '\n';
+
+    vi2d vMapCheck{vRayStart.x, vRayStart.y};
+    // std::cout << vMapCheck.x << " : " << 9 - vMapCheck.y << '\n';
+
+    vf2d vRayLength1D;
+    
+    // std::cout << (vRayStart.x - (vMapCheck.x)*(MAP_STEP_SIZE_WIDTH)) * vRayUnitStepSize.x << " : " << vRayStart.y - (yIndex)*(MAP_STEP_SIZE_HEIGHT)<< '\n';
+
+    vi2d vStep;
+
+    // If direction is negative we are taking negative steps
+    if (vRayDirReal.x < 0)
+    {
+        vStep.x = -1;
+        vRayLength1D.x = (vRayStart.x - (vMapCheck.x)) * vRayUnitStepSize.x;
+    }
+
+    else
+    {
+        vStep.x = 1;
+        vRayLength1D.x = (vMapCheck.x + 1.0 - vRayStart.x) * vRayUnitStepSize.x;
+    }
+    
+    if (vRayDirReal.y < 0)
+    {
+        vStep.y = -1;
+        vRayLength1D.y = (vRayStart.y - vMapCheck.y) * vRayUnitStepSize.y;
+    }
+
+    else
+    {
+        vStep.y = 1;
+        vRayLength1D.y = (vMapCheck.y + 1.0 - vRayStart.y) * vRayUnitStepSize.y;
+    }
+
+    // std::cout << vRayLength1D.x << " : " << vRayLength1D.y << '\n';  
+
+    bool tileFound = false;
+    int side = 0;
+    float fMaxDistance = 20.0f;
+    float fDistance = 0.0f;
+    while (!tileFound && fDistance < fMaxDistance)
+    {
+        if (vRayLength1D.x < vRayLength1D.y)
+        {
+            vMapCheck.x += vStep.x;
+            fDistance = vRayLength1D.x;
+            vRayLength1D.x += vRayUnitStepSize.x;
+            side = 0;
+        }
+        else
+        {
+            vMapCheck.y += vStep.y;
+            fDistance = vRayLength1D.y;
+            vRayLength1D.y += vRayUnitStepSize.y;
+            side = 1;
+        }
+
+        if (vMapCheck.x >= 0 && vMapCheck.x < MAP_WIDTH && vMapCheck.y >= 0 && vMapCheck.y < MAP_HEIGHT)
+        {
+            std::cout << (9-vMapCheck.y) * (MAP_WIDTH) + vMapCheck.x << '\n';
+            if (map[(9-vMapCheck.y) * (MAP_WIDTH) + vMapCheck.x] != 0)
+            {
+                tileFound = true;
+            }
+        }
+    }
+
+    vf2d vIntersection;
+    if (tileFound)
+    {
+        vIntersection = vRayStart + vRayDirReal * fDistance;
+        vIntersection.x = (vIntersection.x)*(MAP_STEP_SIZE_WIDTH) - 1;
+        vIntersection.y = (vIntersection.y)*(MAP_STEP_SIZE_WIDTH) - 1;
+        vf2d vDistance = vRayLength1D - vRayUnitStepSize;
+        float distance;
+        if (side == 0) distance = vDistance.x;
+        else distance = vDistance.y;
+
+        std::cout << distance << '\n';
+
+        Line line{};
+        line.addLine(vIntersection, vPlayer, color);
+
+        renderLines(line, 3);
+    }
+
+    
 }
 
 void Player::castRays(int FOV)
@@ -27,15 +132,17 @@ void Player::castRays(int FOV)
     std::vector<GLuint> indicies;
 
     unsigned int index = 0;
-    for (int i = -FOV/2; i < FOV/2; i++)
+    for (int i = -FOV/2; i <= FOV/2; i++)
     {
+        std::vector<GLfloat> verticies1;
+        std::vector<GLuint> indicies1;
         
         int newAngle = (angle + i);
         if (newAngle > 360) newAngle -= 360;
         else if (newAngle < 0) newAngle = 360 + newAngle;
         float newAngleRadian = newAngle * ((ONE_DEGREE_RADIAN));
-        float rpx = cos(newAngleRadian) * (.1) - sin(newAngleRadian) * (0) + px;
-        float rpy = sin(newAngleRadian) * (.1) - cos(newAngleRadian) * (0) + py;
+        float rpx = cos(newAngleRadian) * (.05) - sin(newAngleRadian) * (0) + px;
+        float rpy = sin(newAngleRadian) * (.05) - cos(newAngleRadian) * (0) + py;
         const float slope = (rpy-py)/(rpx-px);
 
         Line line1 = castRaysHorizontal(newAngle, slope);
@@ -47,12 +154,12 @@ void Player::castRays(int FOV)
         // Draw 3d
         Line drawLine = (line1.length() < line2.length()) ? line1 : line2;
         float distance =  4 * drawLine.length() * cos((angle - newAngle) * ONE_DEGREE_RADIAN);
-        float lineHeight = (MAP_STEP_SIZE_HEIGHT) / distance; if (lineHeight > 1){lineHeight = 1;}\
+        float lineHeight = (MAP_STEP_SIZE_HEIGHT) / distance; if (lineHeight > 1){lineHeight = 1;}
 
         verticies.insert(verticies.end(), 
             {
-                (1 - 1/(float(FOV)*2) * index), lineHeight, 0.0f,   1.0f, 0.0f, 0.0f,
-                (1 - 1/(float(FOV)*2) * index), -lineHeight, 0.0f,  1.0f, 0.0f, 0.0f
+                (1 - 1/(float(FOV)*2) * (index - 1)), lineHeight, 0.0f,   1.0f, 0.0f, 0.0f,
+                (1 - 1/(float(FOV)*2) * (index - 1)), -lineHeight, 0.0f,  1.0f, 0.0f, 0.0f
             }
         );
 
@@ -61,9 +168,11 @@ void Player::castRays(int FOV)
                 index++, index++
             }
         );
+
+        // renderLines(Line{verticies, indicies}, 20);
     }
 
-    renderLines(Line{verticies, indicies}, 40);
+    renderLines(Line{verticies, indicies}, 5);
 }
 
 Line Player::castRaysVertical(int newAngle, double slope)
@@ -82,8 +191,7 @@ Line Player::castRaysVertical(int newAngle, double slope)
     {
         // Check for intersection
         Point point{xval, yval, VERTICAL, isLookingRight ? RIGHT : LEFT};
-        // break;
-        if (point.intersection(this->map)) break;
+        if (point.intersection(this->map)) {break;}
 
         // Calculate new yval by going up one row in grid
         xval += isLookingRight ? MAP_STEP_SIZE_WIDTH : -MAP_STEP_SIZE_WIDTH;
@@ -125,7 +233,7 @@ Line Player::castRaysHorizontal(int newAngle, double slope)
         // Check for intersection with wall
         Point point{xval, yval, HORIZONTAL, isLookingUp ? UP : DOWN};
         // break;
-        if (point.intersection(this->map)) break;
+        if (point.intersection(this->map)) {break;}
 
         // Calculate new yval by going up one row in grid
         yval += isLookingUp ? MAP_STEP_SIZE_HEIGHT : -MAP_STEP_SIZE_HEIGHT;
@@ -176,44 +284,40 @@ void Player::translate(Directions direction)
     {
     case (FORWARD):
     {
-        float dpx = (epx - px) * XPIXEL * MOVEMENT_FACTOR;
-        float dpy = (epy - py) * YPIXEL * MOVEMENT_FACTOR;
-
-        px += dpx; py += dpy;
-        epx += dpx; epy += dpy;
+        vf2d vShift{(vRayDir - vPlayer) * XPIXEL * MOVEMENT_FACTOR};
+        vPlayer += vShift; 
+        vRayDir += vShift; 
+        camera += vShift;
 
         break;
     }
 
     case (BACKWARD):
     {
-        float dpx = (epx - px) * XPIXEL * MOVEMENT_FACTOR;
-        float dpy = (epy - py) * YPIXEL * MOVEMENT_FACTOR;
-
-        px -= dpx; py -= dpy;
-        epx -= dpx; epy -= dpy;
+        vf2d vShift{(vRayDir - vPlayer) * XPIXEL * MOVEMENT_FACTOR};
+        vPlayer -= vShift;
+        vRayDir -= vShift; 
+        camera -= vShift;
 
         break;
     }
 
     case (STRAFE_LEFT):
     {
-        float dpy = (epx - px) * XPIXEL * MOVEMENT_FACTOR;
-        float dpx = -1 * (epy - py) * YPIXEL * MOVEMENT_FACTOR;
-
-        px += dpx; py += dpy;
-        epx += dpx; epy += dpy;
+        vf2d vShift{(vRayDir - vPlayer).perp() * XPIXEL * MOVEMENT_FACTOR};
+        vPlayer += vShift;
+        vRayDir += vShift; 
+        camera += vShift;
 
         break;
     }
 
     case (STRAFE_RIGHT):
     {
-        float dpy = -1 * (epx - px) * XPIXEL * MOVEMENT_FACTOR;
-        float dpx = (epy - py) * YPIXEL * MOVEMENT_FACTOR;
-
-        px += dpx; py += dpy;
-        epx += dpx; epy += dpy;
+        vf2d vShift{(vRayDir - vPlayer).perp() * XPIXEL * MOVEMENT_FACTOR * -1};
+        vPlayer += vShift;
+        vRayDir += vShift; 
+        camera += vShift;
 
         break;
     }
@@ -223,55 +327,19 @@ void Player::translate(Directions direction)
     }
 }
 
-void Player::drawDot()
-{
-    GLfloat vertices[6] = {px, py, 0.0f, color[0], color[1], color[2]};
-
-    glBindVertexArray(VAO);
-
-    GLuint VBO;
-    glGenBuffers(1, &VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // Set up the vertex attribute pointers
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void *)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void *)(3 * sizeof(GLfloat)));
-
-    glPointSize(10.0f);
-    glDrawArrays(GL_POINTS, 0, 1);
-    glPointSize(1.0f);
-
-    glDeleteBuffers(1, &VBO);
-
-    glBindVertexArray(0);
-}
-
 void Player::drawLine()
 {
     float radian_angle = angle * ONE_DEGREE_RADIAN;
 
-    // recalculate Line end point positions to account for rotation
-    float rot_epx = cos(radian_angle) * (.1) - sin(radian_angle) * (0) + px;
-    float rot_epy = sin(radian_angle) * (.1) + cos(radian_angle) * (0) + py;
+    camera.rotate(vPlayer, radian_angle);
+    vRayDir.rotate(vPlayer, radian_angle);
+    angle = 0;
 
-    epx = rot_epx;
-    epy = rot_epy;
+    Line line{};
+    line.addLine(camera.p1, camera.p2, color);
+    line.addLine(vRayDir, vPlayer, color);
 
-    std::vector<GLfloat> vertices =
-    {
-        px, py, 0.0f,           color[0], color[1], color[2], // Start point
-        rot_epx, rot_epy, 0.0f, color[0], color[1], color[2],
-    };
-
-    std::vector<GLuint> indicies
-    {
-        0, 1
-    };
-
-    renderLines(Line{vertices, indicies}, 3);
+    renderLines(line, 3);
 }
 
 void Player::renderLines(Line line, float size)

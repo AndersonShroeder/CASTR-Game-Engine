@@ -1,6 +1,7 @@
 #pragma once
 #include "scene.hh"
-#include <math.h>
+#include "renderer.hh"
+
 #define PI 3.14159265358
 #define ONE_DEGREE_RADIAN PI / 180
 #define ONE_DEGREE 1
@@ -34,12 +35,11 @@ struct Keys
     bool shift_key = false;
 };
 
+
 // Converts a normalized x, y coordinate to a grid index.
 struct Point
 {
     int index;
-    int index1;
-    int index2;
 
     Point(float xval, float yval, ConversionType type, ConversionType direction)
     {
@@ -80,30 +80,36 @@ struct Point
     }
 };
 
-struct Line
-{
-    // Verticies is a vector of length 12 containing two points
-    std::vector<GLfloat> vertices;
-    std::vector<GLuint> indicies;
 
-    float length()
+
+struct CameraPlane
+{
+    vf2d p1;
+    vf2d p2;
+
+    inline CameraPlane  operator += (const vf2d& rhs) {this->p1 += rhs; this->p2 += rhs;}
+    inline CameraPlane  operator -= (const vf2d& rhs) {this->p1 -= rhs; this->p2 -= rhs;}
+
+    void rotate(vf2d vOrigin, float angle)
     {
-        return sqrt(pow((vertices.at(0) - vertices.at(6)), 2) + pow((vertices.at(1) - vertices.at(7)), 2));
+        p1.rotate(vOrigin, angle);
+        p2.rotate(vOrigin, angle);
     }
 };
 
 class Player
 {
 private:
+    vf2d vPlayer;
+    vf2d vRayDir;
+    CameraPlane camera;
+
     float px;
     float py;
-
-    // end points for direction vector
-    float epx = px + .1;
-    float epy = py;
+    float epx;
+    float epy;
 
     // angle of direction vector
-    int global_angle = 0;
     int angle = 0;
 
     Keys keys;
@@ -178,7 +184,9 @@ public:
         }
     }
 
-    void drawPlayer();
+    void DDA();
+
+    void drawPlayer(Renderer& renderer);
 
     void castRays(int FOV);
     
