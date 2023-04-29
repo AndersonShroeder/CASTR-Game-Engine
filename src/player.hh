@@ -184,7 +184,7 @@ public:
         }
     }
 
-    void DDA();
+    float DDA(Line& line, Line& line3D, int x);
 
     void drawPlayer(Renderer& renderer);
 

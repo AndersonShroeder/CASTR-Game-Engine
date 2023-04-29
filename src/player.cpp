@@ -21,29 +21,22 @@ void Player::drawPlayer(Renderer& renderer)
     checkKeys();
     renderer.renderPoint(vPlayer, color);
     drawLine();
-    DDA();
-    // castRays(90);
+    castRays(1);
 }
 
-void Player::DDA()
+float Player::DDA(Line& line, Line& line3D, int x)
 {
     // ALL VECTORS ARE IN TERMS OF GRID BLOCKS
     const vf2d vRayStart{(vPlayer.x + 1)*10/2, (vPlayer.y + 1)*10/2};
-    vf2d vRayDirReal= (vf2d{(vRayDir.x + 1)*10/2, (vRayDir.y + 1)*10/2} - vRayStart).norm();
-    // std::cout << vRayStart.x << " : " << vRayStart.y << '\n';
-    // std::cout << vRayDirReal.x << " : " << vRayDirReal.y << '\n';
+    vf2d vRayDirTemp = vRayDir;
+    vRayDirTemp.rotate(vPlayer, (x*90.0/float(SCREEN_WDITH))*(ONE_DEGREE_RADIAN));
+    vf2d vRayDirReal= (vf2d{(vRayDirTemp.x + 1)*10/2, (vRayDirTemp.y + 1)*10/2} - vRayStart).norm();
 
-
-    vf2d vRayUnitStepSize = {abs(1/vRayDirReal.x), abs(1/vRayDirReal.y)};
-    // std::cout << vRayUnitStepSize.y/vRayUnitStepSize.x  << '\n';
+    const vf2d vRayUnitStepSize = {abs(1/vRayDirReal.x), abs(1/vRayDirReal.y)};
 
     vi2d vMapCheck{vRayStart.x, vRayStart.y};
-    // std::cout << vMapCheck.x << " : " << 9 - vMapCheck.y << '\n';
 
     vf2d vRayLength1D;
-    
-    // std::cout << (vRayStart.x - (vMapCheck.x)*(MAP_STEP_SIZE_WIDTH)) * vRayUnitStepSize.x << " : " << vRayStart.y - (yIndex)*(MAP_STEP_SIZE_HEIGHT)<< '\n';
-
     vi2d vStep;
 
     // If direction is negative we are taking negative steps
@@ -71,8 +64,6 @@ void Player::DDA()
         vRayLength1D.y = (vMapCheck.y + 1.0 - vRayStart.y) * vRayUnitStepSize.y;
     }
 
-    // std::cout << vRayLength1D.x << " : " << vRayLength1D.y << '\n';  
-
     bool tileFound = false;
     int side = 0;
     float fMaxDistance = 20.0f;
@@ -96,7 +87,6 @@ void Player::DDA()
 
         if (vMapCheck.x >= 0 && vMapCheck.x < MAP_WIDTH && vMapCheck.y >= 0 && vMapCheck.y < MAP_HEIGHT)
         {
-            std::cout << (9-vMapCheck.y) * (MAP_WIDTH) + vMapCheck.x << '\n';
             if (map[(9-vMapCheck.y) * (MAP_WIDTH) + vMapCheck.x] != 0)
             {
                 tileFound = true;
@@ -114,148 +104,70 @@ void Player::DDA()
         float distance;
         if (side == 0) distance = vDistance.x;
         else distance = vDistance.y;
+        float lineHeight = 1 / (2 * distance); if (lineHeight > 1){lineHeight = 1;}
+        float color[3] = {1.0f, 0.0f, 0.0f};
 
-        std::cout << distance << '\n';
+        switch(map[(9-vMapCheck.y) * (MAP_WIDTH) + vMapCheck.x])
+        {
+            case (1):
+                if (side == 0)
+                {
+                    color[0] = 1.0f; color[1] = 0.0f; color[2] = 0.0f;
+                }
+                else
+                {
+                    color[0] = 0.5f; color[1] = 0.0f; color[2] = 0.0f;
+                }
+                break;
+            case (2):
+                if (side == 0)
+                {
+                    color[0] = 0.0f; color[1] = 1.0f; color[2] = 0.0f;
+                }
+                else
+                {
+                    color[0] = 0.0f; color[1] = 0.5f; color[2] = 0.0f;
+                }
+                break;
+            case (3):
+                if (side == 0)
+                {
+                    color[0] = 0.0f; color[1] = 0.0f; color[2] = 1.0f;
+                }
+                else
+                {
+                    color[0] = 0.0f; color[1] = 0.0f; color[2] = 0.5f;
+                }
+                break;
+            default:
+                break;
+        }
 
-        Line line{};
         line.addLine(vIntersection, vPlayer, color);
+        line3D.addLine(vf2d{(-float(XPIXEL) * float(x)), lineHeight}, vf2d{(-float(XPIXEL) * float(x)), -lineHeight}, color);
 
-        renderLines(line, 3);
+        return distance;
     }
 
-    
+    return 0;
 }
 
 void Player::castRays(int FOV)
 {
     std::vector<GLfloat> verticies;
     std::vector<GLuint> indicies;
+    Line line;
+    Line line3D;
 
     unsigned int index = 0;
-    for (int i = -FOV/2; i <= FOV/2; i++)
+    for (int x = -SCREEN_WDITH/2; x <= SCREEN_WDITH/2; x++)
     {
-        std::vector<GLfloat> verticies1;
-        std::vector<GLuint> indicies1;
-        
-        int newAngle = (angle + i);
-        if (newAngle > 360) newAngle -= 360;
-        else if (newAngle < 0) newAngle = 360 + newAngle;
-        float newAngleRadian = newAngle * ((ONE_DEGREE_RADIAN));
-        float rpx = cos(newAngleRadian) * (.05) - sin(newAngleRadian) * (0) + px;
-        float rpy = sin(newAngleRadian) * (.05) - cos(newAngleRadian) * (0) + py;
-        const float slope = (rpy-py)/(rpx-px);
-
-        Line line1 = castRaysHorizontal(newAngle, slope);
-        Line line2 = castRaysVertical(newAngle, slope);
-
-        // Render shortest line
-        (line1.length() < line2.length()) ? renderLines(line1, 5) : renderLines(line2, 5);
-
-        // Draw 3d
-        Line drawLine = (line1.length() < line2.length()) ? line1 : line2;
-        float distance =  4 * drawLine.length() * cos((angle - newAngle) * ONE_DEGREE_RADIAN);
-        float lineHeight = (MAP_STEP_SIZE_HEIGHT) / distance; if (lineHeight > 1){lineHeight = 1;}
-
-        verticies.insert(verticies.end(), 
-            {
-                (1 - 1/(float(FOV)*2) * (index - 1)), lineHeight, 0.0f,   1.0f, 0.0f, 0.0f,
-                (1 - 1/(float(FOV)*2) * (index - 1)), -lineHeight, 0.0f,  1.0f, 0.0f, 0.0f
-            }
-        );
-
-        indicies.insert(indicies.end(),
-            {
-                index++, index++
-            }
-        );
-
-        // renderLines(Line{verticies, indicies}, 20);
+        DDA(line, line3D, x);
     }
 
-    renderLines(Line{verticies, indicies}, 5);
-}
-
-Line Player::castRaysVertical(int newAngle, double slope)
-{
-    int colsChecked = 0;
-    bool isLookingRight = (newAngle < 90 || newAngle > 270);
     
-    int pixx = NORMAL_TO_PIXEL_X(px);
-    int x_remainder =  pixx % (CELL_WIDTH);
-    pixx = isLookingRight ? pixx + (CELL_WIDTH - x_remainder) : pixx - x_remainder;
-
-    float xval = float(((pixx)*2))/(SCREEN_HEIGHT) - 1;
-    float yval = slope*(xval - px) + py;
-
-    while (colsChecked < MAP_WIDTH)
-    {
-        // Check for intersection
-        Point point{xval, yval, VERTICAL, isLookingRight ? RIGHT : LEFT};
-        if (point.intersection(this->map)) {break;}
-
-        // Calculate new yval by going up one row in grid
-        xval += isLookingRight ? MAP_STEP_SIZE_WIDTH : -MAP_STEP_SIZE_WIDTH;
-        yval = slope*(xval - px) + py;
-        
-        colsChecked++;
-    }
-
-    std::vector<GLfloat> vertices
-    {
-        px, py, 0.0f, 0.0f, 1.0f, 0.0f,
-        xval, yval, 0.0f, 0.0f, 1.0f, 0.0f
-    };
-
-    // Tie end points to index for rendering
-    std::vector<GLuint> indicies
-    {
-        0, 1
-    };
-
-    return Line{vertices, indicies};
-}
-
-Line Player::castRaysHorizontal(int newAngle, double slope)
-{
-    int checked = 0;
-    bool isLookingUp = newAngle < 180;
-
-    int pixy = NORMAL_TO_PIXEL_Y(py);
-    int y_remainder =  pixy % (CELL_HEIGHT);
-    pixy = isLookingUp ? pixy - y_remainder + (CELL_HEIGHT) : (pixy - y_remainder);
-    
-
-    float yval = double(((pixy)*2))/(SCREEN_HEIGHT) - 1;
-    float xval = (yval - py)/slope + px;
-
-    while (checked < MAP_HEIGHT)
-    {
-        // Check for intersection with wall
-        Point point{xval, yval, HORIZONTAL, isLookingUp ? UP : DOWN};
-        // break;
-        if (point.intersection(this->map)) {break;}
-
-        // Calculate new yval by going up one row in grid
-        yval += isLookingUp ? MAP_STEP_SIZE_HEIGHT : -MAP_STEP_SIZE_HEIGHT;
-        xval = (yval - py)/slope + px;
-        
-        checked++;
-    }
-    
-    // Add end points to vertices array
-    std::vector<GLfloat> vertices
-    {
-        px, py, 0.0f, 1.0f, 0.0f, 0.0f,
-        xval, yval, 0.0f, 1.0f, 0.0f, 0.0f
-    };
-
-    // Tie end points to index for rendering
-    std::vector<GLuint> indicies
-    {
-        0, 1
-    };
-
-    return Line{vertices, indicies};
+    renderLines(line, 3);
+    renderLines(line3D, 1);
 }
 
 void Player::checkKeys()
