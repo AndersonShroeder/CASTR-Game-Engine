@@ -74,7 +74,8 @@ struct Line
     std::vector<GLuint> indicies;
     std::vector<GLfloat> color;
 
-    void addLine(vf2d p1, vf2d p2, float color[3])
+    template<class T1, class T2>
+    void addLine(T1 p1, T2 p2, float color[3])
     {
         vertices.insert(
             vertices.end(),
@@ -95,6 +96,7 @@ struct Line
         );
 
     }
+    
 
     float length()
     {
