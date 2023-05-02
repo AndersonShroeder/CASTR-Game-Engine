@@ -5,7 +5,7 @@ Player::Player(float px, float py, GLFWwindow *window, const GLuint &VAO, const 
 {
     this->vPlayer = vf2d{px, py};
     this->vRayDir = vf2d{px + .05, py};
-    this->camera = CameraPlane{{px + .05, py -.1f}, {px + .05, py +.1f}};
+    this->camera = CameraPlane{{px, py -.05f}, {px, py +.05f}};
     this->px = px;
     this->py = py;
     this->VAO = VAO;
@@ -19,26 +19,30 @@ Player::Player(float px, float py, GLFWwindow *window, const GLuint &VAO, const 
 void Player::drawPlayer(Renderer& renderer)
 {
     checkKeys();
-    renderer.renderPoint(vPlayer, color);
+    // renderer.renderPoint(vPlayer, color);
     drawLine();
     castRays(1);
 }
 
+// #define NOANGLE
+
 float Player::DDA(Line& line, Line& line3D, int x)
 {
     // ALL VECTORS ARE IN TERMS OF GRID BLOCKS
+    #ifdef NOANGLE
     double cameraX = x/double(SCREEN_WDITH); // Normalized camera position ON THE CAMERA PLANE
     const vf2d vRayStart{((camera.p2.x + (camera.p1.x - camera.p2.x) * cameraX) + 1)*10/2, ((camera.p2.y + (camera.p1.y-camera.p2.y) * cameraX)+ 1)*10/2}; // Find start position by
-    // std::cout << vRayStart.x << " : " << vRayStart.y << '\n';
     vf2d vRayDirReal = ((vf2d{(vRayDir.x - vPlayer.x)*10/2, (vRayDir.y - vPlayer.y)*10/2}).norm());
-    // vf2d vRayDirReal = (vf2d{(vRayDir.x + 1)*10/2, (vRayDir.y + 1)*10/2}).norm();
-    // vRayDirTemp.rotate(vPlayer, (x*90.0/float(SCREEN_WDITH))*(ONE_DEGREE_RADIAN));  
-    // vf2d vRayDirReal= (vf2d{(vRayDirTemp.x + 1)*10/2, (vRayDirTemp.y + 1)*10/2} - vRayStart).norm();
+    #else
+    vf2d vRayStart{(vPlayer.x + 1)*10/2, (vPlayer.y + 1)*10/2};
+    vf2d vRayDirTemp = vRayDir;
+    vRayDirTemp.rotate(vPlayer, (x*90.0/float(SCREEN_WDITH))*(ONE_DEGREE_RADIAN));  
+    vf2d vRayDirReal= (vf2d{(vRayDirTemp.x + 1)*10/2, (vRayDirTemp.y + 1)*10/2} - vRayStart).norm();
+    #endif
 
     const vf2d vRayUnitStepSize = {abs(1/vRayDirReal.x), abs(1/vRayDirReal.y)};
 
     vi2d vMapCheck{vRayStart.x, vRayStart.y};
-
     vf2d vRayLength1D;
     vi2d vStep;
 
@@ -107,7 +111,7 @@ float Player::DDA(Line& line, Line& line3D, int x)
         float distance;
         if (side == 0) distance = vDistance.x;
         else distance = vDistance.y;
-        float lineHeight = 1 / (2 * distance); if (lineHeight > 1){lineHeight = 1;}
+        float lineHeight = 1 / (2*distance); if (lineHeight > 1){lineHeight = 1;}
         float color[3] = {1.0f, 0.0f, 0.0f};
 
         switch(map[(9-vMapCheck.y) * (MAP_WIDTH) + vMapCheck.x])
@@ -146,8 +150,8 @@ float Player::DDA(Line& line, Line& line3D, int x)
                 break;
         }
         // vf2d{vRayStart.x*2/10 - 1, vRayStart.y*2/10 - 1}
-        line.addLine(vIntersection, vf2d{vRayStart.x*2/10 - 1, vRayStart.y*2/10 - 1}, color);
-        line3D.addLine(vf2d{(1-float(XPIXEL) * float(x)), lineHeight}, vf2d{(1-float(XPIXEL) * float(x)), -lineHeight}, color);
+        // line.addLine(vIntersection, vPlayer, color);
+        line3D.addLine(vf2d{(-float(XPIXEL) * float(x)), lineHeight}, vf2d{(-float(XPIXEL) * float(x)), -lineHeight}, color);
 
         return distance;
     }
@@ -163,7 +167,7 @@ void Player::castRays(int FOV)
     Line line3D;
 
     unsigned int index = 0;
-    for (int x = 0; x <= SCREEN_WDITH; x++)
+    for (int x = -SCREEN_WDITH/2; x <= SCREEN_WDITH/2; x++)
     {
         DDA(line, line3D, x);
     }
@@ -254,7 +258,7 @@ void Player::drawLine()
     line.addLine(camera.p1, camera.p2, color);
     line.addLine(vRayDir, vPlayer, color);
 
-    renderLines(line, 3);
+    // renderLines(line, 3);
 }
 
 void Player::renderLines(Line line, float size)

@@ -26,7 +26,7 @@ GLFWwindow *Renderer::initWindow()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow *window = glfwCreateWindow(FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, "RayCasterEngine", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(SCREEN_WDITH, FULL_SCREEN_HEIGHT, "RayCasterEngine", NULL, NULL);
 
     if (window == NULL)
     {
@@ -206,7 +206,7 @@ void Renderer::drawGrid()
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void *)0);
 
-    glDrawElements(GL_LINES, indices.size(), GL_UNSIGNED_INT, 0);
+    // glDrawElements(GL_LINES, indices.size(), GL_UNSIGNED_INT, 0);
 
     glDeleteBuffers(1, &gridVBO);
     glDeleteBuffers(1, &gridIBO);
