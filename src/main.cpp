@@ -1,7 +1,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include "renderer.hh"
+// #include "renderer.hh"
 #include "player.hh"
+#include "newRenderer.hh"
 
 // 2d representation of map
 int map[SCREEN_WDITH * SCREEN_HEIGHT] =
@@ -20,23 +21,28 @@ int map[SCREEN_WDITH * SCREEN_HEIGHT] =
 
 int main()
 {
-	Renderer renderer;
+	// Renderer renderer;
+	GLuint num = 0;
+	
+	CASTRWindow window(SCREEN_HEIGHT, SCREEN_WDITH, SCREEN_HEIGHT, SCREEN_WDITH, "1");
+	CASTRWindow window2(SCREEN_HEIGHT, SCREEN_WDITH, SCREEN_HEIGHT, SCREEN_WDITH, "2");
+	CASTRRayCastMapRenderer renderer(MAP_WIDTH, MAP_HEIGHT, map, &window);
+	CASTRRayCastMapRenderer renderer2(MAP_WIDTH, MAP_HEIGHT, map, &window2);
+	Point p1({0, 0}, {1.0f, 0.0f, 0.0f}, 20);
 
-	Player player(-.5, 0, renderer.window, renderer.VAO, renderer.shaderProgram, map);
-
-	while (!glfwWindowShouldClose(renderer.window))
+	while (!glfwWindowShouldClose(renderer.window->window) && !glfwWindowShouldClose(renderer2.window->window))
 	{
+		glfwMakeContextCurrent(renderer.window->window);
 		glClear(GL_COLOR_BUFFER_BIT);
 		glClearColor(0.2, 0.2, 0.2, 1);
-
-		#ifdef GRID_DEMO
-		// renderer.drawMap(map);
 		renderer.drawGrid();
-		#endif
-		player.drawPlayer(renderer);
-		
+		glfwSwapBuffers(renderer.window->window);
 
-		glfwSwapBuffers(renderer.window);
+		glfwMakeContextCurrent(renderer2.window->window);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glClearColor(0.2, 0.2, 0.2, 1);
+		renderer2.drawGrid();
+		glfwSwapBuffers(renderer2.window->window);
 
 		glfwPollEvents();
 	}
