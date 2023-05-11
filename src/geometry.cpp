@@ -6,7 +6,7 @@ Geometry::Geometry(std::vector<GLfloat> vertices, std::vector<GLuint> indicies, 
     this->size = size;
 }
 
-Lines::Lines(std::vector<GLfloat> vertices, std::vector<GLuint> indicies, float size = 1.0f) : Geometry(vertices, indicies, size)
+Lines::Lines(std::vector<GLfloat> vertices, std::vector<GLuint> indicies, float size) : Geometry(vertices, indicies, size)
 {
     this->type = GL_LINES;
 }
@@ -43,7 +43,7 @@ float Lines::length()
     return sqrt(pow((vertices.at(0) - vertices.at(6)), 2) + pow((vertices.at(1) - vertices.at(7)), 2));
 }
 
-Triangles::Triangles(std::vector<GLfloat> vertices, std::vector<GLuint> indicies, float size = 1.0f) : Geometry(vertices, indicies, size)
+Triangles::Triangles(std::vector<GLfloat> vertices, std::vector<GLuint> indicies, float size) : Geometry(vertices, indicies, size)
 {
     this->type = GL_TRIANGLES;
 }
