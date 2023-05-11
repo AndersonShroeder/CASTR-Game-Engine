@@ -73,13 +73,11 @@ public:
 
     std::vector<GLfloat> vertices;
     std::vector<GLuint> indicies;
-    std::vector<GLfloat> color;
 
-    Geometry(std::vector<GLfloat> vertices, std::vector<GLuint> indicies, std::vector<GLfloat> color, float size)
+    Geometry(std::vector<GLfloat> vertices, std::vector<GLuint> indicies, float size)
     {
         this->vertices = vertices;
         this->indicies = indicies;
-        this->color = color;
         this->size = size;
     }
 
@@ -89,7 +87,7 @@ public:
 class Lines : public Geometry
 {
 public:
-    Lines(std::vector<GLfloat> vertices, std::vector<GLuint> indicies, std::vector<GLfloat> color, float size = 1.0f) : Geometry(vertices, indicies, color, size)
+    Lines(std::vector<GLfloat> vertices, std::vector<GLuint> indicies, float size = 1.0f) : Geometry(vertices, indicies, size)
     {
         this->type = GL_LINES;
     }
@@ -100,7 +98,7 @@ public:
     }
 
     template <class T1, class T2>
-    void addLine(T1 p1, T2 p2)
+    void addLine(T1 p1, T2 p2, GLfloat color[3])
     {
         vertices.insert(
             vertices.end(),
@@ -108,15 +106,15 @@ public:
                 p1.x,
                 p1.y,
                 0.0f,
-                color.at(0),
-                color.at(1),
-                color.at(2),
+                color[0],
+                color[1],
+                color[2],
                 p2.x,
                 p2.y,
                 0.0f,
-                color.at(0),
-                color.at(1),
-                color.at(2),
+                color[0],
+                color[1],
+                color[2],
             });
 
         unsigned int indexOne = indicies.size();
@@ -138,7 +136,7 @@ public:
 class Triangles : public Geometry
 {
 public:
-    Triangles(std::vector<GLfloat> vertices, std::vector<GLuint> indicies, std::vector<GLfloat> color, float size = 1.0f) : Geometry(vertices, indicies, color, size)
+    Triangles(std::vector<GLfloat> vertices, std::vector<GLuint> indicies, float size = 1.0f) : Geometry(vertices, indicies, size)
     {
         this->type = GL_TRIANGLES;
     }
@@ -150,7 +148,7 @@ class Point : public Geometry
 {
     // GLfloat vertices[6] = {point.x, point.y, 0.0f, color[0], color[1], color[2]};
 public:
-    Point(vf2d v, std::vector<GLfloat> color, float size) : Geometry({v.x, v.y, 0.0f, color[0], color[1], color[2]}, {0}, color, size)
+    Point(vf2d v, std::vector<GLfloat> color, float size) : Geometry({v.x, v.y, 0.0f, color[0], color[1], color[2]}, {0}, size)
     {
         this->type = GL_POINTS;
     }

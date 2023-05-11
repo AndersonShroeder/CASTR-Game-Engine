@@ -19,30 +19,35 @@ int map[SCREEN_WDITH * SCREEN_HEIGHT] =
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 };
 
+int map2[SCREEN_WDITH * SCREEN_HEIGHT] =
+	{
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		1, 0, 0, 1, 0, 0, 0, 0, 0, 1,
+		1, 0, 0, 0, 0, 0, 1, 0, 0, 1,
+		1, 0, 0, 0, 1, 0, 0, 0, 0, 1,
+		1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+		1, 0, 0, 0, 0, 2, 0, 0, 0, 1,
+		1, 1, 0, 0, 0, 0, 0, 0, 0, 1,
+		1, 0, 0, 0, 0, 0, 3, 1, 0, 1,
+		1, 0, 0, 1, 0, 0, 0, 0, 0, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+};
+
 int main()
 {
-	// Renderer renderer;
-	GLuint num = 0;
+	float stepSizeX = 1.0/5.0;
+	float stepSizeY = 1.0/5.0;
 	
 	CASTRWindow window(SCREEN_HEIGHT, SCREEN_WDITH, SCREEN_HEIGHT, SCREEN_WDITH, "1");
 	CASTRWindow window2(SCREEN_HEIGHT, SCREEN_WDITH, SCREEN_HEIGHT, SCREEN_WDITH, "2");
-	CASTRRayCastMapRenderer renderer(MAP_WIDTH, MAP_HEIGHT, map, &window);
-	CASTRRayCastMapRenderer renderer2(MAP_WIDTH, MAP_HEIGHT, map, &window2);
+	CASTRRayCastMapRenderer renderer(MAP_WIDTH, MAP_HEIGHT, map, stepSizeX, stepSizeY, &window);
+	CASTRRayCastMapRenderer renderer2(MAP_WIDTH, MAP_HEIGHT, map2, stepSizeX, stepSizeY, &window2);
 	Point p1({0, 0}, {1.0f, 0.0f, 0.0f}, 20);
 
 	while (!glfwWindowShouldClose(renderer.window->window) && !glfwWindowShouldClose(renderer2.window->window))
 	{
-		glfwMakeContextCurrent(renderer.window->window);
-		glClear(GL_COLOR_BUFFER_BIT);
-		glClearColor(0.2, 0.2, 0.2, 1);
-		renderer.drawGrid();
-		glfwSwapBuffers(renderer.window->window);
-
-		glfwMakeContextCurrent(renderer2.window->window);
-		glClear(GL_COLOR_BUFFER_BIT);
-		glClearColor(0.2, 0.2, 0.2, 1);
-		renderer2.drawGrid();
-		glfwSwapBuffers(renderer2.window->window);
+		renderer.render();
+		renderer2.render();
 
 		glfwPollEvents();
 	}
