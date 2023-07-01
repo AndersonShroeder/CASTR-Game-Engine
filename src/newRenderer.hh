@@ -1,7 +1,7 @@
 #pragma once
 
 #include "window.hh"
-#include "geometry.hh"
+#include "entity.hh"
 
 class CASTRRenderer
 {
@@ -14,6 +14,7 @@ public:
     GLuint initShaderProgram();
 
     virtual void render();
+    // virtual void renderEntity(Entity entity){};
 
     template <class T>
     void renderGeometry(T geometry);
@@ -42,13 +43,9 @@ private:
 class CASTRRayCastMapRenderer : public CASTRRenderer
 {
 public:
-    CASTRRayCastMapRenderer(int mapWidth, int mapHeight, int *map, float stepSizeX, float stepSizeY, CASTRWindow *window, std::vector<GLfloat> gridColor = {0.0f, 0.0f, 0.0f}) : CASTRRenderer(window)
-    {
-        createGridVertices(gridColor, stepSizeX, stepSizeY);
-        createMapVertices(mapWidth, mapHeight, map, stepSizeX, stepSizeY);
-    }
-
+    CASTRRayCastMapRenderer(CASTRWindow *window) : CASTRRenderer(window){}
     void render() override;
+    void generateMap(int mapWidth, int mapHeight, int *map, float stepSizeX, float stepSizeY, std::vector<GLfloat> gridColor = {0.0f, 0.0f, 0.0f});
 
 private:
     Lines gridLines{{}, {}, {}};

@@ -76,12 +76,17 @@ void CASTRRenderer::renderGeometry(T geometry)
     glBindVertexArray(0);
 }
 
+void CASTRRayCastMapRenderer::generateMap(int mapWidth, int mapHeight, int *map, float stepSizeX, float stepSizeY, std::vector<GLfloat> gridColor)
+{
+    createGridVertices(gridColor, stepSizeX, stepSizeY);
+    createMapVertices(mapWidth, mapHeight, map, stepSizeX, stepSizeY);
+}
+
 void CASTRRayCastMapRenderer::render()
 {
     CASTRRenderer::render();
     drawMap();
     drawGrid();
-    glfwSwapBuffers(window->window);
 }
 
 void CASTRRayCastMapRenderer::drawGrid()
@@ -93,7 +98,6 @@ void CASTRRayCastMapRenderer::drawMap()
 {
     renderGeometry(mapTriangles);
 }
-
 
 void CASTRRayCastMapRenderer::createGridVertices(std::vector<GLfloat> color, float stepSizeX, float stepSizeY)
 {
@@ -107,7 +111,7 @@ void CASTRRayCastMapRenderer::createGridVertices(std::vector<GLfloat> color, flo
         gridVertices.insert(
             gridVertices.end(),
             {
-                x, -1.0f, 0.0f, color[0], color[1], color[2],
+                x, -1.0f, 0.0f, color[0], color[1], color[2], 
                 x, 1.0f, 0.0f, color[0], color[1], color[2], 
             }
         );
