@@ -1,6 +1,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include "game.hh"
+#include "scene.hh"
 
 // 2d representation of map
 int map[SCREEN_WDITH * SCREEN_HEIGHT] =
@@ -37,6 +37,8 @@ int main()
 {
 	float stepSizeX = 1.0/5.0;
 	float stepSizeY = 1.0/5.0;
+
+	
 	
 	CASTRWindow window(SCREEN_HEIGHT, SCREEN_WDITH, SCREEN_HEIGHT, SCREEN_WDITH, "1");
 	CASTRWindow window2(SCREEN_HEIGHT, SCREEN_WDITH, SCREEN_HEIGHT, SCREEN_WDITH, "2");
@@ -52,16 +54,18 @@ int main()
 		{Entity{{0.5f, 0.5f}}, Entity{{0.0f, 0.0f}}, Entity{{-0.5f, -0.5f}}, Entity{{-0.5f, 0.5f}}, Entity{{0.5f, -0.5f}}}
 	);
 
+	Player player;
+	glfwSetWindowUserPointer(window.window, &player);
+	glfwSetKeyCallback(window.window, &Player::key_callback);
+
 	while (!glfwWindowShouldClose(renderer.window->window) && !glfwWindowShouldClose(renderer2.window->window))
 	{
+		player.checkInput();
 		renderer.render();
-		// for (Entity& i: objs)
-		// {
-		// 	float r1 = -0.01 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.01f+0.01f)));
-		// 	float r2 = -0.01 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.01f+0.01f)));
-		// 	renderer.renderEntity(i);
-		// 	i.updatePos(r1,r2);
-		// }
+
+		Point p = Point{player.vPos, {1.0f, 0.0f, 0.0f}, 10.0f};
+		renderer.renderGeometry(p);
+
 		glfwSwapBuffers(window.window);
 
 		renderer2.render();

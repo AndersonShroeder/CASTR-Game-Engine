@@ -46,35 +46,9 @@ GLuint CASTRRenderer::initShaderProgram()
     return shaderProgram;
 }
 
-template <class T>
-void CASTRRenderer::renderGeometry(T geometry)
-{
-    glUseProgram(shaderProgram);
+/////////////////////////////////   CASTRRayCastRenderer   /////////////////////////////////
 
-    glBindVertexArray(VAO);
-
-    GLuint gridVBO, gridIBO;
-    glGenBuffers(1, &gridVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, gridVBO);
-    glBufferData(GL_ARRAY_BUFFER, geometry.vertices.size() * sizeof(GLfloat), geometry.vertices.data(), GL_STATIC_DRAW);
-
-    glGenBuffers(1, &gridIBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gridIBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, geometry.indicies.size() * sizeof(GLuint), geometry.indicies.data(), GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void *)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void *)(3 * sizeof(GLfloat)));
-
-    geometry.setSize();
-    glDrawElements(geometry.type, geometry.indicies.size(), GL_UNSIGNED_INT, 0);
-
-    glDeleteBuffers(1, &gridVBO);
-    glDeleteBuffers(1, &gridIBO);
-
-    glBindVertexArray(0);
-}
+///////////////////////////////// CASTRRayCastMapRenderer /////////////////////////////////
 
 void CASTRRayCastMapRenderer::generateMap(int mapWidth, int mapHeight, int *map, float stepSizeX, float stepSizeY, std::vector<GLfloat> gridColor)
 {
